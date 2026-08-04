@@ -1,0 +1,2 @@
+# Treat installer binaries as binary
+*.exe binary
