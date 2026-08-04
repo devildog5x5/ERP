@@ -1,4 +1,4 @@
-# Build Ledgerly client and server Windows installers
+# Build Ledgerly Windows 10+ executables and combined installer
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $root
@@ -18,29 +18,27 @@ Write-Host "==> Ensuring PyInstaller is installed"
 
 Write-Host "==> Cleaning previous build outputs"
 Remove-Item -Recurse -Force dist\LedgerlyServer, dist\LedgerlyClient, build -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force -Path dist\installers | Out-Null
+Remove-Item -Force dist\installers\*.exe -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path dist\installers, installers | Out-Null
 
-Write-Host "==> Building LedgerlyServer executable"
+Write-Host "==> Building LedgerlyServer executable (Windows 10+)"
 & $python -m PyInstaller --noconfirm --clean --distpath dist --workpath build\server bundle\ledgerly-server.spec
 if ($LASTEXITCODE -ne 0) { throw "Server PyInstaller build failed" }
 
-Write-Host "==> Building LedgerlyClient executable"
+Write-Host "==> Building LedgerlyClient executable (Windows 10+)"
 & $python -m PyInstaller --noconfirm --clean --distpath dist --workpath build\client bundle\ledgerly-client.spec
 if ($LASTEXITCODE -ne 0) { throw "Client PyInstaller build failed" }
 
-Write-Host "==> Compiling server installer"
-& $iscc installer\server.iss
-if ($LASTEXITCODE -ne 0) { throw "Server Inno Setup compile failed" }
+Write-Host "==> Compiling combined LedgerlySetup installer"
+& $iscc installer\ledgerly.iss
+if ($LASTEXITCODE -ne 0) { throw "Combined Inno Setup compile failed" }
 
-Write-Host "==> Compiling client installer"
-& $iscc installer\client.iss
-if ($LASTEXITCODE -ne 0) { throw "Client Inno Setup compile failed" }
-
-Write-Host "==> Copying installers to installers\"
-New-Item -ItemType Directory -Force -Path installers | Out-Null
-Copy-Item dist\installers\LedgerlyServerSetup.exe installers\ -Force
-Copy-Item dist\installers\LedgerlyClientSetup.exe installers\ -Force
+Write-Host "==> Publishing installer to installers\"
+Remove-Item -Force installers\LedgerlyServerSetup.exe, installers\LedgerlyClientSetup.exe -ErrorAction SilentlyContinue
+Copy-Item dist\installers\LedgerlySetup.exe installers\ -Force
 
 Write-Host ""
-Write-Host "Installers ready:"
-Get-ChildItem installers\*.exe | ForEach-Object { Write-Host "  $($_.FullName)  ($([math]::Round($_.Length/1MB,1)) MB)" }
+Write-Host "Installer ready (Windows 10+):"
+Get-ChildItem installers\LedgerlySetup.exe | ForEach-Object {
+    Write-Host "  $($_.FullName)  ($([math]::Round($_.Length/1MB,1)) MB)"
+}

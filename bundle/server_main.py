@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from bundle.paths import appdata_dir, is_frozen, resource_root  # noqa: E402
+from bundle.wincompat import require_windows_10  # noqa: E402
 
 
 def prepare_runtime() -> Path:
@@ -57,8 +58,10 @@ def prepare_runtime() -> Path:
 
 
 def main() -> None:
+    require_windows_10()
     data_dir = prepare_runtime()
     print("Ledgerly API server", flush=True)
+    print("Compatible with Windows 10 and later", flush=True)
     print(f"Data directory: {data_dir}", flush=True)
     print("Listening on http://127.0.0.1:8000", flush=True)
     print("API docs: http://127.0.0.1:8000/docs", flush=True)

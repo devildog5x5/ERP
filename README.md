@@ -15,21 +15,26 @@ erp.db           SQLite database used by the server
 
 ## Downloads
 
-Windows installers (no Python required on the target PC):
+**Requires Windows 10 or later** (Windows 10, 11, and newer). No Python install needed.
 
-| Component | Download |
-|-----------|----------|
-| **Server** | [LedgerlyServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.0.0/LedgerlyServerSetup.exe) |
-| **Client** | [LedgerlyClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.0.0/LedgerlyClientSetup.exe) |
+| Package | Download |
+|---------|----------|
+| **Ledgerly Setup (Client + Server)** | [LedgerlySetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.1.0/LedgerlySetup.exe) |
 
 All releases: [https://github.com/devildog5x5/ERP/releases](https://github.com/devildog5x5/ERP/releases)
 
-Install **Server** first, launch it, then install and launch **Client**.
+During setup you can choose:
+- **Full installation** — Server and Client  
+- **Server only**  
+- **Client only**  
+- **Custom** — pick either or both  
+
+Recommended: install Server first (or Full), start the Server, then start the Client.
 
 - Server data/config: `%LOCALAPPDATA%\Ledgerly\Server`
 - Client config (`API_BASE`): `%LOCALAPPDATA%\Ledgerly\Client\config.txt`
 
-Rebuild installers (requires Python venv + [Inno Setup 6](https://jrsoftware.org/isinfo.php)):
+Rebuild the installer (requires Python venv + [Inno Setup 6](https://jrsoftware.org/isinfo.php)):
 
 ```powershell
 .\build_installers.ps1
@@ -87,11 +92,11 @@ Override the API URL from the browser with `?api=http://HOST:8000` (stored in lo
 app/                 API server (FastAPI + SQLAlchemy)
 client/              SPA client (HTML/CSS/JS modules)
 bundle/              PyInstaller entry points + specs
-installer/           Inno Setup scripts (.iss)
-dist/installers/     Built Setup.exe outputs
+installer/           Inno Setup script (combined Win10+ installer)
+installers/          Published LedgerlySetup.exe
 run_server.py        Start API on :8000
 run_client.py        Start client on :3000
 start.ps1            Start both (dev)
-build_installers.ps1 Build Windows installers
+build_installers.ps1 Build Windows 10+ installer
 seed.py              Demo data
 ```

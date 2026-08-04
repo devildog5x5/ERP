@@ -17,9 +17,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from bundle.paths import appdata_dir, is_frozen, resource_root  # noqa: E402
+from bundle.wincompat import require_windows_10  # noqa: E402
 
 HOST = "127.0.0.1"
 PORT = 3000
+socketserver.ThreadingTCPServer.allow_reuse_address = True
 
 
 class SpaHandler(http.server.SimpleHTTPRequestHandler):
@@ -71,6 +73,7 @@ def read_config(cfg: Path) -> dict[str, str]:
 
 
 def main() -> None:
+    require_windows_10()
     assets = client_dir()
     cfg_path = ensure_config()
     cfg = read_config(cfg_path)
@@ -82,6 +85,7 @@ def main() -> None:
 
     url = f"http://{HOST}:{PORT}/?api={api_base}"
     print("Ledgerly web client", flush=True)
+    print("Compatible with Windows 10 and later", flush=True)
     print(f"Serving UI from: {assets}", flush=True)
     print(f"Client URL: {url}", flush=True)
     print(f"Config file: {cfg_path}", flush=True)
