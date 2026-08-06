@@ -1,0 +1,16 @@
+Ledgerly Server
+===============
+
+This installer puts the Ledgerly API and database on this computer.
+
+What you get
+  • Ledgerly Server (listens on http://127.0.0.1:8000)
+  • Local data folder under %LOCALAPPDATA%\Ledgerly\Server
+  • Demo data seeded on first launch
+
+Typical setup
+  1. Install Server on the machine that should hold your business data.
+  2. Launch Ledgerly Server and leave it running.
+  3. Install Ledgerly Client on this PC and/or other PCs on the network.
+
+Windows 10 or later is required. No Python install is needed.
