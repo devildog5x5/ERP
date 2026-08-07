@@ -1,0 +1,18 @@
+Ledgerly Client
+===============
+
+Installs the Ledgerly work screen on this computer.
+
+What you get
+  - Ledgerly Client UI (http://127.0.0.1:3000)
+  - Config under %LOCALAPPDATA%\Ledgerly\Client\config.txt
+
+Important
+  The Client does not store inventory or orders by itself.
+  Ledgerly Server must already be installed and running (port 8000)
+  before you can use the Client.
+
+If Server runs on another machine, edit config.txt and set API_BASE
+to that machine's address (for example http://192.168.1.10:8000).
+
+Requires Windows 10 or later. No Python install needed.
