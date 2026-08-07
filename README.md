@@ -10,35 +10,49 @@ app/             FastAPI API server (port 8000)
 erp.db           SQLite database used by the server
 ```
 
-- **Server** — REST API, database, reminder scheduler, email dispatch  
-- **Client** — browser UI; no business logic stored server-side in templates  
+- **Server** — REST API, database, reminder scheduler, email dispatch
+- **Client** — browser UI; no business logic stored server-side in templates
 
 ## Downloads
 
-**Requires Windows 10 or later** (Windows 10, 11, and newer). No Python install needed.
+**Requires Windows 10 or later.** No Python install needed.
 
-| Package | Download |
-|---------|----------|
-| **Ledgerly Setup (Client + Server)** | [LedgerlySetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.1.0/LedgerlySetup.exe) |
+| Package | What it installs | Download |
+|---------|------------------|----------|
+| **Ledgerly Setup** | Asks you: Server, Client, or Both | [LedgerlySetup.exe](https://github.com/devildog5x5/ERP/releases/latest/download/LedgerlySetup.exe) |
+| **Server Setup** | Server only | [LedgerlyServerSetup.exe](https://github.com/devildog5x5/ERP/releases/latest/download/LedgerlyServerSetup.exe) |
+| **Client Setup** | Client only | [LedgerlyClientSetup.exe](https://github.com/devildog5x5/ERP/releases/latest/download/LedgerlyClientSetup.exe) |
 
 All releases: [https://github.com/devildog5x5/ERP/releases](https://github.com/devildog5x5/ERP/releases)
 
-During setup you can choose:
-- **Full installation** — Server and Client  
-- **Server only**  
-- **Client only**  
-- **Custom** — pick either or both  
+Current installer version: **1.2.0** (see `installer/version.iss`).
 
-Recommended: install Server first (or Full), start the Server, then start the Client.
+### Which one should I use?
+
+- **One PC for everything** → *Ledgerly Setup* → choose **BOTH**, or install Server Setup + Client Setup on that machine.
+- **Shared server + other workstations** → Server Setup on the data machine, Client Setup on each workstation.
+- **Not sure** → run **Ledgerly Setup**. Right after Welcome you get three obvious choices: Both / Server / Client.
+
+Recommended order: install and start the Server, then start the Client.
 
 - Server data/config: `%LOCALAPPDATA%\Ledgerly\Server`
 - Client config (`API_BASE`): `%LOCALAPPDATA%\Ledgerly\Client\config.txt`
 
-Rebuild the installer (requires Python venv + [Inno Setup 6](https://jrsoftware.org/isinfo.php)):
+Silent chooser examples:
+
+```powershell
+.\LedgerlySetup.exe /VERYSILENT /TYPE=full
+.\LedgerlySetup.exe /VERYSILENT /TYPE=server
+.\LedgerlySetup.exe /VERYSILENT /TYPE=client
+```
+
+Rebuild installers (Python venv + [Inno Setup 6](https://jrsoftware.org/isinfo.php)):
 
 ```powershell
 .\build_installers.ps1
 ```
+
+That produces all three Setup executables under `installers\`.
 
 ## Quick start (development)
 
@@ -71,20 +85,20 @@ python run_client.py
 
 Then open:
 
-- **Client UI:** [http://127.0.0.1:3000](http://127.0.0.1:3000)  
-- **API health:** [http://127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health)  
+- **Client UI:** [http://127.0.0.1:3000](http://127.0.0.1:3000)
+- **API health:** [http://127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health)
 - **API docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 Override the API URL from the browser with `?api=http://HOST:8000` (stored in localStorage).
 
 ## Features
 
-- Inventory with reorder points and buy quantities  
-- Purchase orders (create / receive / low-stock suggestions)  
-- Sales orders with stock deduction  
-- Reminders: low stock, suggested buys, overdue/incoming POs  
-- Email alerts (SMTP or console demo mode)  
-- Background reminder scheduler on the API server  
+- Inventory with reorder points and buy quantities
+- Purchase orders (create / receive / low-stock suggestions)
+- Sales orders with stock deduction
+- Reminders: low stock, suggested buys, overdue/incoming POs
+- Email alerts (SMTP or console demo mode)
+- Background reminder scheduler on the API server
 
 ## Project layout
 
@@ -92,11 +106,12 @@ Override the API URL from the browser with `?api=http://HOST:8000` (stored in lo
 app/                 API server (FastAPI + SQLAlchemy)
 client/              SPA client (HTML/CSS/JS modules)
 bundle/              PyInstaller entry points + specs
-installer/           Inno Setup script (combined Win10+ installer)
-installers/          Published LedgerlySetup.exe
+installer/           Inno Setup scripts (server, client, chooser)
+installers/          Published Setup executables
+scripts/             Source checks (no Inno required)
 run_server.py        Start API on :8000
 run_client.py        Start client on :3000
 start.ps1            Start both (dev)
-build_installers.ps1 Build Windows 10+ installer
+build_installers.ps1 Build all three Windows 10+ installers
 seed.py              Demo data
 ```
