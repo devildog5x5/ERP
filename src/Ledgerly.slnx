@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Ledgerly.Client/Ledgerly.Client.csproj" />
+  <Project Path="Ledgerly.Server/Ledgerly.Server.csproj" />
+  <Project Path="Ledgerly.Shared/Ledgerly.Shared.csproj" />
+</Solution>

@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Ledgerly Server",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-server",
+      "program": "${workspaceFolder}/src/Ledgerly.Server/bin/Debug/net48/Ledgerly.Server.exe",
+      "cwd": "${workspaceFolder}/src/Ledgerly.Server",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Ledgerly Client",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-client",
+      "program": "${workspaceFolder}/src/Ledgerly.Client/bin/Debug/net48-windows/Ledgerly.Client.exe",
+      "cwd": "${workspaceFolder}/src/Ledgerly.Client"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Ledgerly Server + Client",
+      "configurations": ["Ledgerly Server", "Ledgerly Client"],
+      "stopAll": true
+    }
+  ]
+}

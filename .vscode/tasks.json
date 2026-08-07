@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-server",
+      "command": "dotnet",
+      "type": "process",
+      "args": ["build", "${workspaceFolder}/src/Ledgerly.Server/Ledgerly.Server.csproj"],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "build-client",
+      "command": "dotnet",
+      "type": "process",
+      "args": ["build", "${workspaceFolder}/src/Ledgerly.Client/Ledgerly.Client.csproj"],
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

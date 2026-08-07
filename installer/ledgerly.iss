@@ -1,6 +1,6 @@
 ; Ledgerly ERP — combined Client / Server installer (Windows 10+)
 #define MyAppName "Ledgerly ERP"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "Ledgerly"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
 
@@ -19,8 +19,8 @@ OutputBaseFilename=LedgerlySetup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-; Windows 10 and later only
-MinVersion=10.0
+; Windows 7 SP1 and later
+MinVersion=6.1sp1
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -78,9 +78,10 @@ var
   Version: TWindowsVersion;
 begin
   GetWindowsVersionEx(Version);
-  if Version.Major < 10 then
+  { Windows 7 is 6.1 }
+  if (Version.Major < 6) or ((Version.Major = 6) and (Version.Minor < 1)) then
   begin
-    MsgBox('Ledgerly ERP requires Windows 10 or later.', mbError, MB_OK);
+    MsgBox('Ledgerly ERP requires Windows 7 SP1 or later (and .NET Framework 4.8).', mbError, MB_OK);
     Result := False;
   end
   else

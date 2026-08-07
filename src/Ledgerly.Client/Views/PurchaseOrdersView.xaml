@@ -1,0 +1,28 @@
+<UserControl x:Class="Ledgerly.Client.Views.PurchaseOrdersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
+            <Button Content="Add" Style="{StaticResource PrimaryButton}" Click="Add_Click" Margin="0,0,8,0"/>
+            <Button Content="Edit" Style="{StaticResource SecondaryButton}" Click="Edit_Click" Margin="0,0,8,0"/>
+            <Button Content="Approve" Style="{StaticResource SecondaryButton}" Click="Approve_Click" Margin="0,0,8,0"/>
+            <Button Content="Receive" Style="{StaticResource SecondaryButton}" Click="Receive_Click" Margin="0,0,8,0"/>
+            <Button Content="Print" Style="{StaticResource SecondaryButton}" Click="Print_Click" Margin="0,0,8,0"/>
+            <Button Content="Vendor bill" Style="{StaticResource SecondaryButton}" Click="Bill_Click" Margin="0,0,8,0"/>
+            <Button Content="Export CSV" Style="{StaticResource SecondaryButton}" Click="Export_Click" Margin="0,0,8,0"/>
+            <Button Content="Delete" Style="{StaticResource DangerButton}" Click="Delete_Click"/>
+        </StackPanel>
+        <DataGrid x:Name="Grid" AutoGenerateColumns="False" IsReadOnly="True"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                  BorderThickness="0" CanUserAddRows="False" RowHeight="38"
+                  SelectionMode="Single">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="PO" Binding="{Binding PoNumber}" Width="160"/>
+                <DataGridTextColumn Header="Supplier" Binding="{Binding SupplierName}" Width="*"/>
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                <DataGridTextColumn Header="Expected" Binding="{Binding ExpectedDate}" Width="110"/>
+                <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=C}" Width="100"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

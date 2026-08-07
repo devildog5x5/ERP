@@ -1,0 +1,479 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using Ledgerly.Shared;
+
+namespace Ledgerly.Client.Dialogs;
+
+public static class EntityDialogs
+{
+    public static ProductCreateDto? EditProduct(Window owner, ProductDto? existing, IList<PartnerDto> suppliers)
+    {
+        var sku = Field(existing?.Sku ?? "");
+        var upc = Field(existing?.Upc ?? "");
+        var name = Field(existing?.Name ?? "");
+        var category = Field(existing?.Category ?? "");
+        var unit = Field(existing?.Unit ?? "ea");
+        var qty = Field((existing?.QuantityOnHand ?? 0).ToString(CultureInfo.InvariantCulture));
+        var reorder = Field((existing?.ReorderPoint ?? 10).ToString(CultureInfo.InvariantCulture));
+        var buyQty = Field((existing?.ReorderQuantity ?? 25).ToString(CultureInfo.InvariantCulture));
+        var cost = Field((existing?.UnitCost ?? 0).ToString(CultureInfo.InvariantCulture));
+        var price = Field((existing?.SellPrice ?? 0).ToString(CultureInfo.InvariantCulture));
+        var supplierItems = new List<ComboItem> { new ComboItem(0, "(none)") };
+        supplierItems.AddRange(suppliers.Select(s => new ComboItem(s.Id, s.Name)));
+        var supplier = Combo(supplierItems, existing?.SupplierId ?? 0);
+
+        if (!Show(owner, existing is null ? "Add product" : "Edit product", 460,
+                Row("SKU", sku),
+                Row("UPC / barcode (scan here)", upc),
+                Row("Name", name), Row("Category", category), Row("Unit", unit),
+                Row("On hand", qty), Row("Reorder point", reorder), Row("Buy qty", buyQty),
+                Row("Unit cost", cost), Row("Sell price", price), Row("Supplier", supplier)))
+            return null;
+
+        if (string.IsNullOrWhiteSpace(sku.Text) || string.IsNullOrWhiteSpace(name.Text))
+        {
+            MessageBox.Show("SKU and name are required.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+
+        return new ProductCreateDto
+        {
+            Sku = sku.Text.Trim(),
+            Upc = NullIfEmpty(upc.Text),
+            Name = name.Text.Trim(),
+            Category = NullIfEmpty(category.Text),
+            Unit = string.IsNullOrWhiteSpace(unit.Text) ? "ea" : unit.Text.Trim(),
+            QuantityOnHand = Dec(qty.Text),
+            ReorderPoint = Dec(reorder.Text),
+            ReorderQuantity = Dec(buyQty.Text),
+            UnitCost = Dec(cost.Text),
+            SellPrice = Dec(price.Text),
+            SupplierId = SelectedId(supplier) is int sid && sid > 0 ? sid : null
+        };
+    }
+
+    public static PartnerCreateDto? EditPartner(Window owner, string kind, PartnerDto? existing)
+    {
+        var name = Field(existing?.Name ?? "");
+        var email = Field(existing?.Email ?? "");
+        var phone = Field(existing?.Phone ?? "");
+        var address = Field(existing?.Address ?? "");
+
+        if (!Show(owner, existing is null ? $"Add {kind}" : $"Edit {kind}", 420,
+                Row("Name", name), Row("Email", email), Row("Phone", phone), Row("Address", address)))
+            return null;
+
+        if (string.IsNullOrWhiteSpace(name.Text))
+        {
+            MessageBox.Show("Name is required.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+
+        return new PartnerCreateDto
+        {
+            Name = name.Text.Trim(),
+            Email = NullIfEmpty(email.Text),
+            Phone = NullIfEmpty(phone.Text),
+            Address = NullIfEmpty(address.Text)
+        };
+    }
+
+    public static ReminderCreateDto? EditReminder(Window owner, ReminderDto? existing)
+    {
+        var type = Field(existing?.ReminderType ?? "manual");
+        var severity = Combo(new List<ComboItem>
+        {
+            new ComboItem(0, "info"), new ComboItem(1, "warning"), new ComboItem(2, "critical")
+        }, SeverityIndex(existing?.Severity));
+        var title = Field(existing?.Title ?? "");
+        var message = Field(existing?.Message ?? "", multiline: true);
+
+        if (!Show(owner, existing is null ? "Add reminder" : "Edit reminder", 440,
+                Row("Type", type), Row("Severity", severity), Row("Title", title), Row("Message", message)))
+            return null;
+
+        if (string.IsNullOrWhiteSpace(title.Text))
+        {
+            MessageBox.Show("Title is required.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+
+        return new ReminderCreateDto
+        {
+            ReminderType = string.IsNullOrWhiteSpace(type.Text) ? "manual" : type.Text.Trim(),
+            Severity = ((ComboItem)severity.SelectedItem).Label,
+            Title = title.Text.Trim(),
+            Message = message.Text.Trim()
+        };
+    }
+
+    public static PurchaseOrderCreateDto? EditPurchaseOrder(
+        Window owner, PurchaseOrderDto? existing, IList<PartnerDto> suppliers, IList<ProductDto> products)
+    {
+        if (suppliers.Count == 0 || products.Count == 0)
+        {
+            MessageBox.Show("Add at least one supplier and one product first.", "Ledgerly",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return null;
+        }
+
+        var supplier = Combo(suppliers.Select(s => new ComboItem(s.Id, s.Name)).ToList(), existing?.SupplierId ?? suppliers[0].Id);
+        var expected = Field(existing?.ExpectedDate?.ToString("yyyy-MM-dd") ?? DateTime.Today.AddDays(7).ToString("yyyy-MM-dd"));
+        var notes = Field("", multiline: true);
+        var lines = new List<LineDraft>();
+        if (existing != null)
+        {
+            foreach (var l in existing.Lines)
+                lines.Add(new LineDraft(l.ProductId, l.QuantityOrdered, l.UnitCost, LabelFor(products, l.ProductId)));
+        }
+
+        var linesBox = new ListBox { Height = 120, Margin = new Thickness(0, 0, 0, 8) };
+        void RefreshLines() => linesBox.ItemsSource = lines.Select(l => l.Display).ToList();
+        RefreshLines();
+
+        var product = Combo(products.Select(p => new ComboItem(p.Id, $"{p.Sku} — {p.Name}")).ToList(), products[0].Id);
+        var qty = Field("1");
+        var addLine = new Button { Content = "Add line", Style = (Style)Application.Current.FindResource("SecondaryButton"), Margin = new Thickness(8, 0, 0, 0) };
+        addLine.Click += (_, _) =>
+        {
+            var pid = SelectedId(product) ?? 0;
+            var q = Dec(qty.Text);
+            if (pid <= 0 || q <= 0) return;
+            var p = products.First(x => x.Id == pid);
+            lines.Add(new LineDraft(pid, q, p.UnitCost, $"{p.Sku} — {p.Name}"));
+            RefreshLines();
+        };
+        var removeLine = new Button { Content = "Remove selected", Style = (Style)Application.Current.FindResource("SecondaryButton"), Margin = new Thickness(8, 0, 0, 0) };
+        removeLine.Click += (_, _) =>
+        {
+            if (linesBox.SelectedIndex < 0 || linesBox.SelectedIndex >= lines.Count) return;
+            lines.RemoveAt(linesBox.SelectedIndex);
+            RefreshLines();
+        };
+
+        var lineTools = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
+        DockPanel.SetDock(removeLine, Dock.Right);
+        DockPanel.SetDock(addLine, Dock.Right);
+        lineTools.Children.Add(removeLine);
+        lineTools.Children.Add(addLine);
+        lineTools.Children.Add(product);
+
+        var rows = new List<UIElement>
+        {
+            Row("Supplier", supplier),
+            Row("Expected (yyyy-MM-dd)", expected),
+            Row("Notes", notes),
+            new TextBlock { Text = "Lines", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 4) },
+            lineTools,
+            Row("Qty", qty),
+            linesBox
+        };
+
+        if (!Show(owner, existing is null ? "Add purchase order" : "Edit purchase order", 520, rows))
+            return null;
+
+        if (lines.Count == 0)
+        {
+            MessageBox.Show("Add at least one line.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+
+        DateTime? expectedDate = null;
+        if (DateTime.TryParse(expected.Text, out var d)) expectedDate = d.Date;
+
+        return new PurchaseOrderCreateDto
+        {
+            SupplierId = SelectedId(supplier) ?? 0,
+            ExpectedDate = expectedDate,
+            Notes = NullIfEmpty(notes.Text),
+            Lines = lines.Select(l => new PurchaseOrderLineCreateDto
+            {
+                ProductId = l.ProductId,
+                QuantityOrdered = l.Quantity,
+                UnitCost = l.UnitCost
+            }).ToList()
+        };
+    }
+
+    public static SalesOrderCreateDto? EditSalesOrder(
+        Window owner, SalesOrderDto? existing, IList<PartnerDto> customers, IList<ProductDto> products)
+    {
+        if (customers.Count == 0 || products.Count == 0)
+        {
+            MessageBox.Show("Add at least one customer and one product first.", "Ledgerly",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return null;
+        }
+
+        var customer = Combo(customers.Select(c => new ComboItem(c.Id, c.Name)).ToList(), existing?.CustomerId ?? customers[0].Id);
+        var notes = Field("", multiline: true);
+        var lines = new List<LineDraft>();
+        if (existing != null)
+        {
+            foreach (var l in existing.Lines)
+                lines.Add(new LineDraft(l.ProductId, l.Quantity, l.UnitPrice, LabelFor(products, l.ProductId)));
+        }
+
+        var linesBox = new ListBox { Height = 120, Margin = new Thickness(0, 0, 0, 8) };
+        void RefreshLines() => linesBox.ItemsSource = lines.Select(l => l.Display).ToList();
+        RefreshLines();
+
+        var product = Combo(products.Select(p => new ComboItem(p.Id, $"{p.Sku} — {p.Name} (avail {p.QuantityOnHand})")).ToList(), products[0].Id);
+        var qty = Field("1");
+        var addLine = new Button { Content = "Add line", Style = (Style)Application.Current.FindResource("SecondaryButton"), Margin = new Thickness(8, 0, 0, 0) };
+        addLine.Click += (_, _) =>
+        {
+            var pid = SelectedId(product) ?? 0;
+            var q = Dec(qty.Text);
+            if (pid <= 0 || q <= 0) return;
+            var p = products.First(x => x.Id == pid);
+            lines.Add(new LineDraft(pid, q, p.SellPrice, $"{p.Sku} — {p.Name}"));
+            RefreshLines();
+        };
+        var removeLine = new Button { Content = "Remove selected", Style = (Style)Application.Current.FindResource("SecondaryButton"), Margin = new Thickness(8, 0, 0, 0) };
+        removeLine.Click += (_, _) =>
+        {
+            if (linesBox.SelectedIndex < 0 || linesBox.SelectedIndex >= lines.Count) return;
+            lines.RemoveAt(linesBox.SelectedIndex);
+            RefreshLines();
+        };
+
+        var lineTools = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
+        DockPanel.SetDock(removeLine, Dock.Right);
+        DockPanel.SetDock(addLine, Dock.Right);
+        lineTools.Children.Add(removeLine);
+        lineTools.Children.Add(addLine);
+        lineTools.Children.Add(product);
+
+        var rows = new List<UIElement>
+        {
+            Row("Customer", customer),
+            Row("Notes", notes),
+            new TextBlock { Text = "Lines", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 4) },
+            lineTools,
+            Row("Qty", qty),
+            linesBox
+        };
+
+        if (!Show(owner, existing is null ? "Add sales order" : "Edit sales order", 520, rows))
+            return null;
+
+        if (lines.Count == 0)
+        {
+            MessageBox.Show("Add at least one line.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+
+        return new SalesOrderCreateDto
+        {
+            CustomerId = SelectedId(customer) ?? 0,
+            Notes = NullIfEmpty(notes.Text),
+            Lines = lines.Select(l => new SalesOrderLineCreateDto
+            {
+                ProductId = l.ProductId,
+                Quantity = l.Quantity,
+                UnitPrice = l.UnitCost
+            }).ToList()
+        };
+    }
+
+    public static ReceivePurchaseOrderDto? ReceivePurchaseOrder(Window owner, PurchaseOrderDto po)
+    {
+        var remaining = po.Lines.Where(l => l.QuantityOrdered > l.QuantityReceived).ToList();
+        if (remaining.Count == 0)
+        {
+            MessageBox.Show("Nothing left to receive on this PO.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            return null;
+        }
+
+        var fields = new List<(PurchaseOrderLineDto Line, TextBox Qty)>();
+        var rows = new List<UIElement>
+        {
+            new TextBlock
+            {
+                Text = $"Receive remaining quantities for {po.PoNumber}",
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 10)
+            }
+        };
+        foreach (var line in remaining)
+        {
+            var left = line.QuantityOrdered - line.QuantityReceived;
+            var qty = Field(left.ToString(CultureInfo.InvariantCulture));
+            fields.Add((line, qty));
+            rows.Add(Row($"{line.ProductSku} (remain {left})", qty));
+        }
+
+        if (!Show(owner, "Receive purchase order", 440, rows))
+            return null;
+
+        return new ReceivePurchaseOrderDto
+        {
+            Lines = fields.Select(f => new ReceiveLineDto
+            {
+                LineId = f.Line.Id,
+                QuantityReceived = Dec(f.Qty.Text)
+            }).Where(x => x.QuantityReceived > 0).ToList()
+        };
+    }
+
+    public static bool ConfirmDelete(Window owner, string label) =>
+        MessageBox.Show(owner, $"Delete {label}?\nThis cannot be undone.", "Confirm delete",
+            MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+
+    public static decimal? PromptDecimal(Window owner, string title, string message, string defaultValue = "1")
+    {
+        var box = Field(defaultValue);
+        if (!Show(owner, title, 360, new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 10) }, Row("Amount", box)))
+            return null;
+        return Dec(box.Text);
+    }
+
+    public static string? FieldPrompt(Window owner, string label, string defaultValue = "")
+    {
+        var box = Field(defaultValue);
+        if (!Show(owner, label, 360, Row(label, box))) return null;
+        return box.Text.Trim();
+    }
+
+    public static void ShowError(Exception ex) =>
+        MessageBox.Show(ex.Message, "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+    private static bool Show(Window owner, string title, double width, params UIElement[] rows) =>
+        Show(owner, title, width, (IEnumerable<UIElement>)rows);
+
+    private static bool Show(Window owner, string title, double width, IEnumerable<UIElement> rows)
+    {
+        var dialog = new Window
+        {
+            Title = title,
+            Owner = owner,
+            Width = width,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ResizeMode = ResizeMode.NoResize,
+            Background = Brushes.White
+        };
+
+        var panel = new StackPanel { Margin = new Thickness(20) };
+        foreach (var row in rows) panel.Children.Add(row);
+
+        var ok = new Button
+        {
+            Content = "Save",
+            Style = (Style)Application.Current.FindResource("PrimaryButton"),
+            IsDefault = true,
+            Margin = new Thickness(0, 0, 8, 0),
+            MinWidth = 90
+        };
+        var cancel = new Button
+        {
+            Content = "Cancel",
+            Style = (Style)Application.Current.FindResource("SecondaryButton"),
+            IsCancel = true,
+            MinWidth = 90
+        };
+        ok.Click += (_, _) => { dialog.DialogResult = true; dialog.Close(); };
+        cancel.Click += (_, _) => { dialog.DialogResult = false; dialog.Close(); };
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 16, 0, 0)
+        };
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        panel.Children.Add(buttons);
+        dialog.Content = panel;
+        return dialog.ShowDialog() == true;
+    }
+
+    private static UIElement Row(string label, UIElement control)
+    {
+        var stack = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
+        stack.Children.Add(new TextBlock
+        {
+            Text = label,
+            Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)),
+            Margin = new Thickness(0, 0, 0, 4)
+        });
+        stack.Children.Add(control);
+        return stack;
+    }
+
+    private static TextBox Field(string value, bool multiline = false) => new()
+    {
+        Text = value,
+        Padding = new Thickness(8, 6, 8, 6),
+        AcceptsReturn = multiline,
+        TextWrapping = multiline ? TextWrapping.Wrap : TextWrapping.NoWrap,
+        Height = multiline ? 72 : double.NaN,
+        VerticalScrollBarVisibility = multiline ? ScrollBarVisibility.Auto : ScrollBarVisibility.Hidden
+    };
+
+    private static ComboBox Combo(IList<ComboItem> items, int selectedId)
+    {
+        return new ComboBox
+        {
+            ItemsSource = items,
+            DisplayMemberPath = nameof(ComboItem.Label),
+            SelectedValuePath = nameof(ComboItem.Id),
+            SelectedValue = items.Any(i => i.Id == selectedId) ? selectedId : items.FirstOrDefault()?.Id,
+            Padding = new Thickness(6)
+        };
+    }
+
+    private static int? SelectedId(ComboBox box) =>
+        box.SelectedValue as int? ?? (box.SelectedItem as ComboItem)?.Id;
+
+    private static decimal Dec(string text) =>
+        decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var d)
+        || decimal.TryParse(text, NumberStyles.Number, CultureInfo.CurrentCulture, out d)
+            ? d : 0;
+
+    private static string? NullIfEmpty(string text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+
+    private static string LabelFor(IList<ProductDto> products, int id)
+    {
+        var p = products.FirstOrDefault(x => x.Id == id);
+        return p is null ? $"Product #{id}" : $"{p.Sku} — {p.Name}";
+    }
+
+    private static int SeverityIndex(string? severity) =>
+        severity?.ToLowerInvariant() switch
+        {
+            "warning" => 1,
+            "critical" => 2,
+            _ => 0
+        };
+
+    private sealed class ComboItem
+    {
+        public ComboItem(int id, string label) { Id = id; Label = label; }
+        public int Id { get; }
+        public string Label { get; }
+    }
+
+    private sealed class LineDraft
+    {
+        public LineDraft(int productId, decimal quantity, decimal unitCost, string label)
+        {
+            ProductId = productId;
+            Quantity = quantity;
+            UnitCost = unitCost;
+            Label = label;
+        }
+
+        public int ProductId { get; }
+        public decimal Quantity { get; }
+        public decimal UnitCost { get; }
+        public string Label { get; }
+        public string Display => $"{Label}  × {Quantity} @ {UnitCost:C}";
+    }
+}

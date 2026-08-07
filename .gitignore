@@ -12,3 +12,11 @@ erp.db
 build/
 dist/
 *.spec.bak
+
+# .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+.vs/
+*.db.bak*
