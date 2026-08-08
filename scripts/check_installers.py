@@ -60,11 +60,13 @@ def main() -> int:
         ("BOTH  —  Server and Client" in chooser, "both option label"),
         ("SERVER  —  data and API" in chooser, "server option label"),
         ("CLIENT  —  the screen you work in" in chooser, "client option label"),
+        ("SelectBoth" in chooser and "LabelBothHint.OnClick" in chooser, "hint clicks select both"),
         (
             "wpSelectComponents" in chooser and "ShouldSkipPage" in chooser,
             "stock components page skipped",
         ),
         ("SyncRadiosFromType" in chooser, "chooser respects /TYPE="),
+        ("UpdateReadyMemo" in chooser, "ready page restates choice"),
         (
             'Name: "full"' in chooser
             and 'Name: "server"' in chooser
