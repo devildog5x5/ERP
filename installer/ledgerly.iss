@@ -1,8 +1,8 @@
-; Ledgerly ERP — combined Client / Server installer (Windows 10+)
+; Ledgerly ERP — chooser installer
+; One Setup.exe: Server, Client, or Both.
+#include "version.iss"
+
 #define MyAppName "Ledgerly ERP"
-#define MyAppVersion "1.2.0"
-#define MyAppPublisher "Ledgerly"
-#define MyAppURL "https://github.com/devildog5x5/ERP"
 
 [Setup]
 AppId={{C9E5A1D4-6F70-4B13-9E4C-A2B1D3E5F708}
@@ -19,31 +19,33 @@ OutputBaseFilename=LedgerlySetup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-; Windows 7 SP1 and later
-MinVersion=6.1sp1
+MinVersion=10.0
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\Server\LedgerlyServer.exe
-InfoBeforeFile=
 VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
-VersionInfoDescription=Ledgerly ERP client and server installer
+VersionInfoDescription=Ledgerly ERP installer (Server / Client / Both)
 VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}
+ShowComponentSizes=no
+AlwaysShowComponentsList=no
+FlatComponentsList=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+; Silent: LedgerlySetup.exe /TYPE=full|server|client
 [Types]
-Name: "full"; Description: "Full installation (Server and Client)"
+Name: "full"; Description: "Both Server and Client"
 Name: "server"; Description: "Server only"
 Name: "client"; Description: "Client only"
-Name: "custom"; Description: "Custom installation"; Flags: iscustom
+Name: "custom"; Description: "Custom"; Flags: iscustom
 
 [Components]
-Name: "server"; Description: "Ledgerly Server (API on port 8000)"; Types: full server custom; Flags: checkablealone
-Name: "client"; Description: "Ledgerly Client (UI on port 3000)"; Types: full client custom; Flags: checkablealone
+Name: "server"; Description: "Ledgerly Server"; Types: full server custom; Flags: checkablealone
+Name: "client"; Description: "Ledgerly Client"; Types: full client custom; Flags: checkablealone
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -73,30 +75,233 @@ Type: filesandordirs; Name: "{localappdata}\Ledgerly\Server"
 Type: filesandordirs; Name: "{localappdata}\Ledgerly\Client"
 
 [Code]
+var
+  ChoicePage: TWizardPage;
+  RadioBoth: TNewRadioButton;
+  RadioServer: TNewRadioButton;
+  RadioClient: TNewRadioButton;
+  LabelBothHint: TNewStaticText;
+  LabelServerHint: TNewStaticText;
+  LabelClientHint: TNewStaticText;
+  LabelIntro: TNewStaticText;
+
+procedure SelectBoth(Sender: TObject);
+begin
+  RadioBoth.Checked := True;
+end;
+
+procedure SelectServer(Sender: TObject);
+begin
+  RadioServer.Checked := True;
+end;
+
+procedure SelectClient(Sender: TObject);
+begin
+  RadioClient.Checked := True;
+end;
+
+procedure ApplyChoiceToComponents;
+begin
+  { "!" deselects a component. Type combo order matches [Types]: full, server, client. }
+  if RadioServer.Checked then
+  begin
+    WizardSelectComponents('server,!client');
+    WizardForm.TypesCombo.ItemIndex := 1;
+  end
+  else if RadioClient.Checked then
+  begin
+    WizardSelectComponents('!server,client');
+    WizardForm.TypesCombo.ItemIndex := 2;
+  end
+  else
+  begin
+    WizardSelectComponents('server,client');
+    WizardForm.TypesCombo.ItemIndex := 0;
+  end;
+end;
+
+procedure SyncRadiosFromType;
+var
+  TypeName: String;
+begin
+  TypeName := WizardSetupType(False);
+  if CompareText(TypeName, 'server') = 0 then
+    RadioServer.Checked := True
+  else if CompareText(TypeName, 'client') = 0 then
+    RadioClient.Checked := True
+  else
+    RadioBoth.Checked := True;
+end;
+
+function ChoiceSummary: String;
+begin
+  if RadioServer.Checked then
+    Result := 'SERVER only — API and database on this PC'
+  else if RadioClient.Checked then
+    Result := 'CLIENT only — work screen (needs a running Server)'
+  else
+    Result := 'BOTH — Server and Client on this PC';
+end;
+
+procedure CreateChoicePage;
+var
+  TopPos: Integer;
+begin
+  ChoicePage := CreateCustomPage(
+    wpWelcome,
+    'What do you want to install?',
+    'Pick one option for this computer.'
+  );
+
+  LabelIntro := TNewStaticText.Create(ChoicePage);
+  LabelIntro.Parent := ChoicePage.Surface;
+  LabelIntro.Left := 0;
+  LabelIntro.Top := 0;
+  LabelIntro.Width := ChoicePage.SurfaceWidth;
+  LabelIntro.AutoSize := False;
+  LabelIntro.WordWrap := True;
+  LabelIntro.Caption :=
+    'Ledgerly is two programs: a Server that holds your data, and a Client ' +
+    'you work in every day. Choose what belongs on THIS PC.';
+  LabelIntro.Height := ScaleY(40);
+
+  TopPos := LabelIntro.Top + LabelIntro.Height + ScaleY(14);
+
+  RadioBoth := TNewRadioButton.Create(ChoicePage);
+  RadioBoth.Parent := ChoicePage.Surface;
+  RadioBoth.Left := 0;
+  RadioBoth.Top := TopPos;
+  RadioBoth.Width := ChoicePage.SurfaceWidth;
+  RadioBoth.Height := ScaleY(22);
+  RadioBoth.Caption := 'BOTH  —  Server and Client';
+  RadioBoth.Checked := True;
+  RadioBoth.Font.Style := [fsBold];
+  RadioBoth.OnClick := @SelectBoth;
+
+  LabelBothHint := TNewStaticText.Create(ChoicePage);
+  LabelBothHint.Parent := ChoicePage.Surface;
+  LabelBothHint.Left := ScaleX(22);
+  LabelBothHint.Top := RadioBoth.Top + RadioBoth.Height + ScaleY(2);
+  LabelBothHint.Width := ChoicePage.SurfaceWidth - ScaleX(22);
+  LabelBothHint.AutoSize := False;
+  LabelBothHint.WordWrap := True;
+  LabelBothHint.Caption :=
+    'Everything on this PC. Best for a single-computer shop. ' +
+    'After install: start Server first, then Client.';
+  LabelBothHint.Height := ScaleY(36);
+  LabelBothHint.Cursor := crHand;
+  LabelBothHint.OnClick := @SelectBoth;
+
+  TopPos := LabelBothHint.Top + LabelBothHint.Height + ScaleY(12);
+
+  RadioServer := TNewRadioButton.Create(ChoicePage);
+  RadioServer.Parent := ChoicePage.Surface;
+  RadioServer.Left := 0;
+  RadioServer.Top := TopPos;
+  RadioServer.Width := ChoicePage.SurfaceWidth;
+  RadioServer.Height := ScaleY(22);
+  RadioServer.Caption := 'SERVER  —  data and API';
+  RadioServer.Font.Style := [fsBold];
+  RadioServer.OnClick := @SelectServer;
+
+  LabelServerHint := TNewStaticText.Create(ChoicePage);
+  LabelServerHint.Parent := ChoicePage.Surface;
+  LabelServerHint.Left := ScaleX(22);
+  LabelServerHint.Top := RadioServer.Top + RadioServer.Height + ScaleY(2);
+  LabelServerHint.Width := ChoicePage.SurfaceWidth - ScaleX(22);
+  LabelServerHint.AutoSize := False;
+  LabelServerHint.WordWrap := True;
+  LabelServerHint.Caption :=
+    'Install once on the machine that stores inventory and orders. ' +
+    'Listens on http://127.0.0.1:8000';
+  LabelServerHint.Height := ScaleY(36);
+  LabelServerHint.Cursor := crHand;
+  LabelServerHint.OnClick := @SelectServer;
+
+  TopPos := LabelServerHint.Top + LabelServerHint.Height + ScaleY(12);
+
+  RadioClient := TNewRadioButton.Create(ChoicePage);
+  RadioClient.Parent := ChoicePage.Surface;
+  RadioClient.Left := 0;
+  RadioClient.Top := TopPos;
+  RadioClient.Width := ChoicePage.SurfaceWidth;
+  RadioClient.Height := ScaleY(22);
+  RadioClient.Caption := 'CLIENT  —  the screen you work in';
+  RadioClient.Font.Style := [fsBold];
+  RadioClient.OnClick := @SelectClient;
+
+  LabelClientHint := TNewStaticText.Create(ChoicePage);
+  LabelClientHint.Parent := ChoicePage.Surface;
+  LabelClientHint.Left := ScaleX(22);
+  LabelClientHint.Top := RadioClient.Top + RadioClient.Height + ScaleY(2);
+  LabelClientHint.Width := ChoicePage.SurfaceWidth - ScaleX(22);
+  LabelClientHint.AutoSize := False;
+  LabelClientHint.WordWrap := True;
+  LabelClientHint.Caption :=
+    'Install on each workstation. Needs a running Server ' +
+    '(on this PC or another machine on your network).';
+  LabelClientHint.Height := ScaleY(36);
+  LabelClientHint.Cursor := crHand;
+  LabelClientHint.OnClick := @SelectClient;
+end;
+
 function InitializeSetup(): Boolean;
 var
   Version: TWindowsVersion;
 begin
   GetWindowsVersionEx(Version);
-  { Windows 7 is 6.1 }
-  if (Version.Major < 6) or ((Version.Major = 6) and (Version.Minor < 1)) then
+  if Version.Major < 10 then
   begin
-    MsgBox('Ledgerly ERP requires Windows 7 SP1 or later (and .NET Framework 4.8).', mbError, MB_OK);
+    MsgBox('Ledgerly ERP requires Windows 10 or later.', mbError, MB_OK);
     Result := False;
   end
   else
     Result := True;
 end;
 
+procedure InitializeWizard;
+begin
+  CreateChoicePage;
+  SyncRadiosFromType;
+  ApplyChoiceToComponents;
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  { Custom radios replace the stock component checklist. }
+  Result := (PageID = wpSelectComponents);
+end;
+
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
-  if CurPageID = wpSelectComponents then
+  if (ChoicePage <> nil) and (CurPageID = ChoicePage.ID) then
   begin
-    if (not WizardIsComponentSelected('server')) and (not WizardIsComponentSelected('client')) then
+    if (not RadioBoth.Checked) and (not RadioServer.Checked) and (not RadioClient.Checked) then
     begin
-      MsgBox('Select at least one component: Server and/or Client.', mbError, MB_OK);
+      MsgBox('Select BOTH, SERVER, or CLIENT to continue.', mbError, MB_OK);
       Result := False;
+      Exit;
     end;
+    ApplyChoiceToComponents;
   end;
+end;
+
+function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,
+  MemoTypeInfo, MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
+var
+  S: String;
+begin
+  S := 'Installation choice:' + NewLine;
+  S := S + Space + ChoiceSummary + NewLine + NewLine;
+  S := S + MemoDirInfo + NewLine + NewLine;
+  if MemoGroupInfo <> '' then
+    S := S + MemoGroupInfo + NewLine + NewLine;
+  if MemoTasksInfo <> '' then
+    S := S + MemoTasksInfo + NewLine + NewLine;
+  if RadioClient.Checked then
+    S := S + 'Note: start Ledgerly Server before opening the Client.' + NewLine
+  else if RadioBoth.Checked then
+    S := S + 'Tip: after setup, launch Server first, then Client.' + NewLine;
+  Result := S;
 end;
