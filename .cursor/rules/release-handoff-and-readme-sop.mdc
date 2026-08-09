@@ -16,22 +16,24 @@ When the user asks for a **shipping build**, **release**, **hotfix binaries**, *
 ## Builds
 
 1. `dotnet build` Shared → Server → Client **`-c Release`**.
-2. When packaging installers: use `build_installers.ps1` / `installer/ledgerly.iss` **if** that pipeline matches the current C# outputs; otherwise publish/copy Release binaries and compile Inno Setup so assets exist before uploading.
-3. Expected release asset names (update README if names change):
+2. **Always** produce **all three** installers via `powershell -File .\build_installers.ps1` (never ship only the combined):
    - `LedgerlySetup.exe` — combined (Client and/or Server)
    - `LedgerlyClientSetup.exe` — client only
    - `LedgerlyServerSetup.exe` — server only
+3. Upload **all three** assets to the GitHub Release for that tag.
 
 ## README Downloads (required for a new Release)
 
-1. Update **`README.md` → Downloads** with **verbatim** HTTPS links:
+1. Update **`README.md` → Downloads** with **verbatim** HTTPS links for **Combined, Client, and Server** on the **same** tag:
    `https://github.com/devildog5x5/ERP/releases/download/{tag}/{asset}`
-2. Keep the table rows for **Combined**, **Client only**, and **Server only** honest — if an asset is only on an older tag, link that tag; do not imply an old installer is the newest code.
+2. Do not leave Client/Server pointing at a legacy tag when Combined is newer.
 3. Refresh latest-release notes (tag links, default login `admin`/`admin`, API `http://127.0.0.1:8000`).
 4. **Never invent** working `releases/download/...` URLs. Use `gh release view {tag} --json assets` after upload.
 5. Commit and push the README with the release.
 
 ## Chat handoff — **### New build links** (every rebuild / release)
+
+Always include **all three** installers (plus release page). Do not omit Client or Server.
 
 | Line | Content |
 |------|---------|
@@ -39,7 +41,7 @@ When the user asks for a **shipping build**, **release**, **hotfix binaries**, *
 | **Client** | Full URL to `LedgerlyClientSetup.exe` (or Local path) |
 | **Server** | Full URL to `LedgerlyServerSetup.exe` (or Local path) |
 | **Release page** | `https://github.com/devildog5x5/ERP/releases/tag/{tag}` |
-| **Local smoke** | Full paths to `Ledgerly.Server.exe` and `Ledgerly.Client.exe` when built locally |
+| **Local smoke** | Full paths under `installers\` when built locally |
 
 Do **not** end with “see README” as the only download hint.
 

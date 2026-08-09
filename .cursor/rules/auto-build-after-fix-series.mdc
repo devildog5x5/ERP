@@ -21,8 +21,8 @@ When you finish a **connected set of changes** that fix or materially affect **c
    Start-Process src\Ledgerly.Client\bin\Release\net48-windows\Ledgerly.Client.exe -WorkingDirectory src\Ledgerly.Client
    ```
 3. In the reply, give **full paths** to the `.exe` files to run.
-4. Paste a **### New build links** block (see `release-handoff-and-readme-sop.mdc`) with current GitHub Release download URLs from `gh release list` / `gh release view` — **never invent** `releases/download/...` URLs. If only local binaries exist, say **Local build** and give the paths.
+4. Paste a **### New build links** block (see `release-handoff-and-readme-sop.mdc`) with **Combined + Client + Server** download URLs from `gh release view` — **never invent** URLs. If only local binaries exist, give paths under `installers\` for all three `*Setup.exe` files.
 
 Do this **automatically**; do not wait for “build it,” “so we can test,” or “give me download links.”
 
-Full Inno installers / new GitHub Release tags remain **only when** the user asks for a shipping drop or the release SOP.
+When packaging installers (shipping drop / release SOP), **always** run `build_installers.ps1` so Combined, Client-only, and Server-only are all produced and linked.

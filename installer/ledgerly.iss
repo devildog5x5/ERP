@@ -1,42 +1,67 @@
-; Ledgerly ERP — combined Client / Server installer (C# / .NET Framework 4.8)
-#define MyAppName "Ledgerly ERP"
-#define MyAppVersion "1.3.0"
+; Ledgerly ERP installers (C# / .NET Framework 4.8)
+; Build with: ISCC /DPackage=combined|client|server installer\ledgerly.iss
+#ifndef Package
+  #define Package "combined"
+#endif
+
+#define MyAppVersion "1.4.0"
 #define MyAppPublisher "Ledgerly"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
 
+#if Package == "client"
+  #define MyAppName "Ledgerly Client"
+  #define OutputName "LedgerlyClientSetup"
+  #define AppIdGuid "{{A7B3C2D1-4E5F-6789-A0B1-C2D3E4F50617}"
+  #define DefaultDir "{localappdata}\Programs\LedgerlyClient"
+  #define UninstallIcon "{app}\Ledgerly.Client.exe"
+  #define VersionDesc "Ledgerly ERP client installer"
+#elif Package == "server"
+  #define MyAppName "Ledgerly Server"
+  #define OutputName "LedgerlyServerSetup"
+  #define AppIdGuid "{{B8C4D3E2-5F60-789A-B1C2-D3E4F5061728}"
+  #define DefaultDir "{localappdata}\Programs\LedgerlyServer"
+  #define UninstallIcon "{app}\Ledgerly.Server.exe"
+  #define VersionDesc "Ledgerly ERP server installer"
+#else
+  #define MyAppName "Ledgerly ERP"
+  #define OutputName "LedgerlySetup"
+  #define AppIdGuid "{{C9E5A1D4-6F70-4B13-9E4C-A2B1D3E5F708}"
+  #define DefaultDir "{localappdata}\Programs\Ledgerly"
+  #define UninstallIcon "{app}\Client\Ledgerly.Client.exe"
+  #define VersionDesc "Ledgerly ERP client and server installer"
+#endif
+
 [Setup]
-AppId={{C9E5A1D4-6F70-4B13-9E4C-A2B1D3E5F708}
+AppId={#AppIdGuid}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
-; Per-user default so the installer runs without admin on the build PC.
-DefaultDirName={localappdata}\Programs\Ledgerly
+DefaultDirName={#DefaultDir}
 DefaultGroupName=Ledgerly
 DisableProgramGroupPage=no
 OutputDir=..\dist\installers
-OutputBaseFilename=LedgerlySetup
+OutputBaseFilename={#OutputName}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-; Windows 7 SP1 and later (matches net48 target)
 MinVersion=6.1sp1
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-; Native C# apps are x64 (SQLite / PlatformTarget)
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-UninstallDisplayIcon={app}\Client\Ledgerly.Client.exe
+UninstallDisplayIcon={#UninstallIcon}
 VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
-VersionInfoDescription=Ledgerly ERP client and server installer
+VersionInfoDescription={#VersionDesc}
 VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+#if Package == "combined"
 [Types]
 Name: "full"; Description: "Full installation (Server and Client)"
 Name: "server"; Description: "Server only"
@@ -46,17 +71,31 @@ Name: "custom"; Description: "Custom installation"; Flags: iscustom
 [Components]
 Name: "server"; Description: "Ledgerly Server (API on http://127.0.0.1:8000)"; Types: full server custom; Flags: checkablealone
 Name: "client"; Description: "Ledgerly Client (WPF desktop UI)"; Types: full client custom; Flags: checkablealone
+#endif
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+#if Package == "combined"
 Name: "autostartserver"; Description: "Start Ledgerly Server when I log in"; GroupDescription: "Startup options:"; Components: server; Flags: unchecked
 Name: "autostartclient"; Description: "Start Ledgerly Client when I log in"; GroupDescription: "Startup options:"; Components: client; Flags: unchecked
+#elif Package == "server"
+Name: "autostartserver"; Description: "Start Ledgerly Server when I log in"; GroupDescription: "Startup options:"; Flags: unchecked
+#else
+Name: "autostartclient"; Description: "Start Ledgerly Client when I log in"; GroupDescription: "Startup options:"; Flags: unchecked
+#endif
 
 [Files]
+#if Package == "combined"
 Source: "..\dist\LedgerlyServer\*"; DestDir: "{app}\Server"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: server
 Source: "..\dist\LedgerlyClient\*"; DestDir: "{app}\Client"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: client
+#elif Package == "server"
+Source: "..\dist\LedgerlyServer\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+#else
+Source: "..\dist\LedgerlyClient\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
 
 [Icons]
+#if Package == "combined"
 Name: "{group}\Ledgerly Server"; Filename: "{app}\Server\Ledgerly.Server.exe"; WorkingDir: "{app}\Server"; Components: server
 Name: "{group}\Ledgerly Client"; Filename: "{app}\Client\Ledgerly.Client.exe"; WorkingDir: "{app}\Client"; Components: client
 Name: "{group}\Uninstall Ledgerly ERP"; Filename: "{uninstallexe}"
@@ -64,14 +103,37 @@ Name: "{autodesktop}\Ledgerly Server"; Filename: "{app}\Server\Ledgerly.Server.e
 Name: "{autodesktop}\Ledgerly Client"; Filename: "{app}\Client\Ledgerly.Client.exe"; WorkingDir: "{app}\Client"; Tasks: desktopicon; Components: client
 Name: "{userstartup}\Ledgerly Server"; Filename: "{app}\Server\Ledgerly.Server.exe"; WorkingDir: "{app}\Server"; Tasks: autostartserver; Components: server
 Name: "{userstartup}\Ledgerly Client"; Filename: "{app}\Client\Ledgerly.Client.exe"; WorkingDir: "{app}\Client"; Tasks: autostartclient; Components: client
+#elif Package == "server"
+Name: "{group}\Ledgerly Server"; Filename: "{app}\Ledgerly.Server.exe"; WorkingDir: "{app}"
+Name: "{group}\Uninstall Ledgerly Server"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\Ledgerly Server"; Filename: "{app}\Ledgerly.Server.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{userstartup}\Ledgerly Server"; Filename: "{app}\Ledgerly.Server.exe"; WorkingDir: "{app}"; Tasks: autostartserver
+#else
+Name: "{group}\Ledgerly Client"; Filename: "{app}\Ledgerly.Client.exe"; WorkingDir: "{app}"
+Name: "{group}\Uninstall Ledgerly Client"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\Ledgerly Client"; Filename: "{app}\Ledgerly.Client.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{userstartup}\Ledgerly Client"; Filename: "{app}\Ledgerly.Client.exe"; WorkingDir: "{app}"; Tasks: autostartclient
+#endif
 
 [Run]
+#if Package == "combined"
 Filename: "{app}\Server\Ledgerly.Server.exe"; Description: "Launch Ledgerly Server now"; Flags: nowait postinstall skipifsilent unchecked; Components: server; WorkingDir: "{app}\Server"
 Filename: "{app}\Client\Ledgerly.Client.exe"; Description: "Launch Ledgerly Client now"; Flags: nowait postinstall skipifsilent unchecked; Components: client; WorkingDir: "{app}\Client"
+#elif Package == "server"
+Filename: "{app}\Ledgerly.Server.exe"; Description: "Launch Ledgerly Server now"; Flags: nowait postinstall skipifsilent unchecked; WorkingDir: "{app}"
+#else
+Filename: "{app}\Ledgerly.Client.exe"; Description: "Launch Ledgerly Client now"; Flags: nowait postinstall skipifsilent unchecked; WorkingDir: "{app}"
+#endif
 
 [UninstallDelete]
+#if Package == "combined"
 Type: filesandordirs; Name: "{localappdata}\Ledgerly\Server"
 Type: filesandordirs; Name: "{localappdata}\Ledgerly\Client"
+#elif Package == "server"
+Type: filesandordirs; Name: "{localappdata}\Ledgerly\Server"
+#else
+Type: filesandordirs; Name: "{localappdata}\Ledgerly\Client"
+#endif
 
 [Code]
 function IsDotNet48OrLater(): Boolean;
@@ -80,7 +142,7 @@ var
 begin
   Result := False;
   if RegQueryDWordValue(HKLM, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full', 'Release', Release) then
-    Result := Release >= 528040; { 4.8 }
+    Result := Release >= 528040;
 end;
 
 function InitializeSetup(): Boolean;
@@ -108,6 +170,7 @@ begin
   Result := True;
 end;
 
+#if Package == "combined"
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
@@ -120,3 +183,4 @@ begin
     end;
   end;
 end;
+#endif

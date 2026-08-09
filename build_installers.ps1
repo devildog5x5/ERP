@@ -1,4 +1,7 @@
-# Build Ledgerly C# (.NET Framework 4.8) binaries and combined Inno Setup installer.
+# Build Ledgerly C# (.NET Framework 4.8) binaries and ALL three Inno Setup installers:
+#   LedgerlySetup.exe       — combined (Client + Server, with component choices)
+#   LedgerlyClientSetup.exe — client only
+#   LedgerlyServerSetup.exe — server only
 # Requires: .NET SDK + net48 targeting pack, Inno Setup 6 (ISCC.exe).
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -13,10 +16,14 @@ $serverOut = Join-Path $root "dist\LedgerlyServer"
 $clientOut = Join-Path $root "dist\LedgerlyClient"
 $installerOut = Join-Path $root "dist\installers"
 $publishDir = Join-Path $root "installers"
+$names = @("LedgerlySetup.exe", "LedgerlyClientSetup.exe", "LedgerlyServerSetup.exe")
 
 Write-Host "==> Cleaning previous packaging outputs"
 Remove-Item -Recurse -Force $serverOut, $clientOut -ErrorAction SilentlyContinue
-Remove-Item -Force (Join-Path $installerOut "LedgerlySetup.exe") -ErrorAction SilentlyContinue
+foreach ($n in $names) {
+    Remove-Item -Force (Join-Path $installerOut $n) -ErrorAction SilentlyContinue
+    Remove-Item -Force (Join-Path $publishDir $n) -ErrorAction SilentlyContinue
+}
 New-Item -ItemType Directory -Force -Path $serverOut, $clientOut, $installerOut, $publishDir | Out-Null
 
 Write-Host "==> Publishing Ledgerly.Server (net48 / x64 Release)"
@@ -34,18 +41,21 @@ if (-not (Test-Path (Join-Path $clientOut "Ledgerly.Client.exe"))) {
     throw "Missing Ledgerly.Client.exe in $clientOut"
 }
 
-Write-Host "==> Compiling combined LedgerlySetup installer"
-& $iscc "installer\ledgerly.iss"
-if ($LASTEXITCODE -ne 0) { throw "Inno Setup compile failed" }
+foreach ($package in @("combined", "client", "server")) {
+    Write-Host "==> Compiling $package installer"
+    & $iscc "/DPackage=$package" "installer\ledgerly.iss"
+    if ($LASTEXITCODE -ne 0) { throw "Inno Setup compile failed for Package=$package" }
+}
 
-$setup = Join-Path $installerOut "LedgerlySetup.exe"
-if (-not (Test-Path $setup)) { throw "Installer not produced: $setup" }
-
-Copy-Item $setup (Join-Path $publishDir "LedgerlySetup.exe") -Force
+foreach ($n in $names) {
+    $src = Join-Path $installerOut $n
+    if (-not (Test-Path $src)) { throw "Installer not produced: $src" }
+    Copy-Item $src (Join-Path $publishDir $n) -Force
+}
 
 Write-Host ""
-Write-Host "Installer ready (Windows 7 SP1+ / .NET Framework 4.8):"
-Get-Item (Join-Path $publishDir "LedgerlySetup.exe") | ForEach-Object {
+Write-Host "Installers ready (Windows 7 SP1+ / .NET Framework 4.8):"
+Get-ChildItem $publishDir -Filter "Ledgerly*Setup.exe" | Sort-Object Name | ForEach-Object {
     Write-Host ("  {0}  ({1:N1} MB)" -f $_.FullName, ($_.Length / 1MB))
 }
 Write-Host "  Server payload: $serverOut"
