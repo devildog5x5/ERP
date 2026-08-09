@@ -1,7 +1,7 @@
 # Build Ledgerly C# (.NET Framework 4.8) binaries and ALL three Inno Setup installers:
-#   LedgerlySetup.exe       — combined (Client + Server, with component choices)
-#   LedgerlyClientSetup.exe — client only
-#   LedgerlyServerSetup.exe — server only
+#   LedgerlySetup.exe / LedgerlyClientSetup.exe / LedgerlyServerSetup.exe
+#   Each includes Client + Server payloads and opens with a loud
+#   Client / Server / Both chooser (default selection differs by package name).
 # Requires: .NET SDK + net48 targeting pack, Inno Setup 6 (ISCC.exe).
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path

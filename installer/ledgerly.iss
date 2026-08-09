@@ -1,35 +1,37 @@
 ; Ledgerly ERP installers (C# / .NET Framework 4.8)
 ; Build with: ISCC /DPackage=combined|client|server installer\ledgerly.iss
+; All three packages include Client + Server payloads and open with a loud
+; Client / Server / Both chooser. Package only changes the EXE name and
+; the default selection on that page.
 #ifndef Package
   #define Package "combined"
 #endif
 
-#define MyAppVersion "1.5.2"
+#define MyAppVersion "1.5.3"
 #define MyAppPublisher "Ledgerly"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
+#define MyAppName "Ledgerly ERP"
+#define AppIdGuid "{{C9E5A1D4-6F70-4B13-9E4C-A2B1D3E5F708}"
+#define DefaultDir "{localappdata}\Programs\Ledgerly"
+#define UninstallIcon "{app}\Client\Ledgerly.Client.exe"
 
 #if Package == "client"
-  #define MyAppName "Ledgerly Client"
   #define OutputName "LedgerlyClientSetup"
-  #define AppIdGuid "{{A7B3C2D1-4E5F-6789-A0B1-C2D3E4F50617}"
-  #define DefaultDir "{localappdata}\Programs\LedgerlyClient"
-  #define UninstallIcon "{app}\Ledgerly.Client.exe"
-  #define VersionDesc "Ledgerly ERP client installer"
+  #define VersionDesc "Ledgerly ERP installer (Client / Server / Both)"
+  #define DefaultRole "client"
 #elif Package == "server"
-  #define MyAppName "Ledgerly Server"
   #define OutputName "LedgerlyServerSetup"
-  #define AppIdGuid "{{B8C4D3E2-5F60-789A-B1C2-D3E4F5061728}"
-  #define DefaultDir "{localappdata}\Programs\LedgerlyServer"
-  #define UninstallIcon "{app}\Ledgerly.Server.exe"
-  #define VersionDesc "Ledgerly ERP server installer"
+  #define VersionDesc "Ledgerly ERP installer (Client / Server / Both)"
+  #define DefaultRole "server"
 #else
-  #define MyAppName "Ledgerly ERP"
   #define OutputName "LedgerlySetup"
-  #define AppIdGuid "{{C9E5A1D4-6F70-4B13-9E4C-A2B1D3E5F708}"
-  #define DefaultDir "{localappdata}\Programs\Ledgerly"
-  #define UninstallIcon "{app}\Client\Ledgerly.Client.exe"
-  #define VersionDesc "Ledgerly ERP client and server installer"
+  #define VersionDesc "Ledgerly ERP installer (Client / Server / Both)"
+  #define DefaultRole "both"
 #endif
+
+; Legacy AppIds from older Client-only / Server-only packages (for upgrade cleanup)
+#define LegacyClientAppId "{{A7B3C2D1-4E5F-6789-A0B1-C2D3E4F50617}"
+#define LegacyServerAppId "{{B8C4D3E2-5F60-789A-B1C2-D3E4F5061728}"
 
 [Setup]
 AppId={#AppIdGuid}
@@ -57,18 +59,17 @@ VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#VersionDesc}
 VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}
-; Replace an existing install of this package (same AppId) instead of stacking copies.
 UsePreviousAppDir=yes
 UsePreviousGroup=yes
 CloseApplications=yes
 RestartApplications=no
+ShowComponentSizes=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
-#if Package == "combined"
 [Types]
-Name: "full"; Description: "Full installation (Server and Client)"
+Name: "full"; Description: "Both (Client and Server)"
 Name: "server"; Description: "Server only"
 Name: "client"; Description: "Client only"
 Name: "custom"; Description: "Custom installation"; Flags: iscustom
@@ -76,31 +77,17 @@ Name: "custom"; Description: "Custom installation"; Flags: iscustom
 [Components]
 Name: "server"; Description: "Ledgerly Server (API on http://127.0.0.1:8000)"; Types: full server custom; Flags: checkablealone
 Name: "client"; Description: "Ledgerly Client (WPF desktop UI)"; Types: full client custom; Flags: checkablealone
-#endif
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-#if Package == "combined"
 Name: "autostartserver"; Description: "Start Ledgerly Server when I log in"; GroupDescription: "Startup options:"; Components: server; Flags: unchecked
 Name: "autostartclient"; Description: "Start Ledgerly Client when I log in"; GroupDescription: "Startup options:"; Components: client; Flags: unchecked
-#elif Package == "server"
-Name: "autostartserver"; Description: "Start Ledgerly Server when I log in"; GroupDescription: "Startup options:"; Flags: unchecked
-#else
-Name: "autostartclient"; Description: "Start Ledgerly Client when I log in"; GroupDescription: "Startup options:"; Flags: unchecked
-#endif
 
 [Files]
-#if Package == "combined"
 Source: "..\dist\LedgerlyServer\*"; DestDir: "{app}\Server"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: server
 Source: "..\dist\LedgerlyClient\*"; DestDir: "{app}\Client"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: client
-#elif Package == "server"
-Source: "..\dist\LedgerlyServer\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-#else
-Source: "..\dist\LedgerlyClient\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-#endif
 
 [Icons]
-#if Package == "combined"
 Name: "{group}\Ledgerly Server"; Filename: "{app}\Server\Ledgerly.Server.exe"; WorkingDir: "{app}\Server"; Components: server
 Name: "{group}\Ledgerly Client"; Filename: "{app}\Client\Ledgerly.Client.exe"; WorkingDir: "{app}\Client"; Components: client
 Name: "{group}\Uninstall Ledgerly ERP"; Filename: "{uninstallexe}"
@@ -108,33 +95,27 @@ Name: "{autodesktop}\Ledgerly Server"; Filename: "{app}\Server\Ledgerly.Server.e
 Name: "{autodesktop}\Ledgerly Client"; Filename: "{app}\Client\Ledgerly.Client.exe"; WorkingDir: "{app}\Client"; Tasks: desktopicon; Components: client
 Name: "{userstartup}\Ledgerly Server"; Filename: "{app}\Server\Ledgerly.Server.exe"; WorkingDir: "{app}\Server"; Tasks: autostartserver; Components: server
 Name: "{userstartup}\Ledgerly Client"; Filename: "{app}\Client\Ledgerly.Client.exe"; WorkingDir: "{app}\Client"; Tasks: autostartclient; Components: client
-#elif Package == "server"
-Name: "{group}\Ledgerly Server"; Filename: "{app}\Ledgerly.Server.exe"; WorkingDir: "{app}"
-Name: "{group}\Uninstall Ledgerly Server"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\Ledgerly Server"; Filename: "{app}\Ledgerly.Server.exe"; WorkingDir: "{app}"; Tasks: desktopicon
-Name: "{userstartup}\Ledgerly Server"; Filename: "{app}\Ledgerly.Server.exe"; WorkingDir: "{app}"; Tasks: autostartserver
-#else
-Name: "{group}\Ledgerly Client"; Filename: "{app}\Ledgerly.Client.exe"; WorkingDir: "{app}"
-Name: "{group}\Uninstall Ledgerly Client"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\Ledgerly Client"; Filename: "{app}\Ledgerly.Client.exe"; WorkingDir: "{app}"; Tasks: desktopicon
-Name: "{userstartup}\Ledgerly Client"; Filename: "{app}\Ledgerly.Client.exe"; WorkingDir: "{app}"; Tasks: autostartclient
-#endif
 
 [Run]
-#if Package == "combined"
 Filename: "{app}\Server\Ledgerly.Server.exe"; Description: "Launch Ledgerly Server now"; Flags: nowait postinstall skipifsilent unchecked; Components: server; WorkingDir: "{app}\Server"
 Filename: "{app}\Client\Ledgerly.Client.exe"; Description: "Launch Ledgerly Client now"; Flags: nowait postinstall skipifsilent unchecked; Components: client; WorkingDir: "{app}\Client"
-#elif Package == "server"
-Filename: "{app}\Ledgerly.Server.exe"; Description: "Launch Ledgerly Server now"; Flags: nowait postinstall skipifsilent unchecked; WorkingDir: "{app}"
-#else
-Filename: "{app}\Ledgerly.Client.exe"; Description: "Launch Ledgerly Client now"; Flags: nowait postinstall skipifsilent unchecked; WorkingDir: "{app}"
-#endif
 
 ; Keep %LOCALAPPDATA%\Ledgerly\* (database, server.json, client settings) across
 ; uninstall/reinstall so upgrades do not wipe company data. Use Settings → Refresh
 ; database when a clean slate is wanted.
 
 [Code]
+var
+  RolePage: TWizardPage;
+  RoleHeadline: TNewStaticText;
+  RoleSubhead: TNewStaticText;
+  RoleBoth: TRadioButton;
+  RoleClient: TRadioButton;
+  RoleServer: TRadioButton;
+  RoleHintBoth: TNewStaticText;
+  RoleHintClient: TNewStaticText;
+  RoleHintServer: TNewStaticText;
+
 function IsDotNet48OrLater(): Boolean;
 var
   Release: Cardinal;
@@ -169,17 +150,16 @@ begin
   Result := True;
 end;
 
-function GetUninstallRegKey(): String;
+function UninstallRegKeyForAppId(const AppIdGuid: String): String;
 begin
-  // Same AppId as [Setup]; uninstall key is AppId + _is1
-  Result := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#AppIdGuid}_is1';
+  Result := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppIdGuid + '_is1';
 end;
 
-function TryGetUninstallString(var UninstallString: String): Boolean;
+function TryGetUninstallStringForAppId(const AppIdGuid: String; var UninstallString: String): Boolean;
 var
   Key: String;
 begin
-  Key := GetUninstallRegKey();
+  Key := UninstallRegKeyForAppId(AppIdGuid);
   UninstallString := '';
   Result :=
     RegQueryStringValue(HKCU, Key, 'UninstallString', UninstallString) or
@@ -190,7 +170,6 @@ procedure StopLedgerlyApps();
 var
   ResultCode: Integer;
 begin
-  // Best-effort: unlock binaries before uninstall/replace
   Exec('taskkill.exe', '/F /IM Ledgerly.Client.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec('taskkill.exe', '/F /IM Ledgerly.Server.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Sleep(500);
@@ -208,14 +187,14 @@ begin
   end;
 end;
 
-function UninstallPreviousVersion(): Boolean;
+function UninstallByAppId(const AppIdGuid: String): Boolean;
 var
   UninstallString: String;
   UninstallerPath: String;
   ResultCode: Integer;
 begin
   Result := True;
-  if not TryGetUninstallString(UninstallString) then
+  if not TryGetUninstallStringForAppId(AppIdGuid, UninstallString) then
     exit;
 
   UninstallerPath := RemoveQuotes(UninstallString);
@@ -224,7 +203,6 @@ begin
 
   StopLedgerlyApps();
 
-  // unins*.exe spawns a child and exits early; wait until the uninstaller file is gone.
   if not Exec(UninstallerPath, '/VERYSILENT /NORESTART /SUPPRESSMSGBOXES', '',
        SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin
@@ -237,27 +215,161 @@ begin
   Result := True;
 end;
 
+function UninstallPreviousVersions(): Boolean;
+begin
+  // Current unified package + older Client-only / Server-only AppIds
+  Result :=
+    UninstallByAppId('{#AppIdGuid}') and
+    UninstallByAppId('{#LegacyClientAppId}') and
+    UninstallByAppId('{#LegacyServerAppId}');
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   NeedsRestart := False;
   Result := '';
   StopLedgerlyApps();
-  if not UninstallPreviousVersion() then
-    Result := 'Could not uninstall the previous version of {#MyAppName}. ' +
+  if not UninstallPreviousVersions() then
+    Result := 'Could not uninstall a previous Ledgerly install. ' +
       'Close Ledgerly completely, uninstall it from Apps & features, then run this installer again.';
 end;
 
-#if Package == "combined"
+procedure ApplyRoleSelection();
+begin
+  if RoleBoth.Checked then
+    WizardSelectComponents('server,client')
+  else if RoleClient.Checked then
+    WizardSelectComponents('client,!server')
+  else
+    WizardSelectComponents('server,!client');
+end;
+
+procedure InitializeWizard();
+var
+  TopY: Integer;
+begin
+  RolePage := CreateCustomPage(wpWelcome,
+    'WHAT DO YOU WANT TO INSTALL?',
+    'Choose Client, Server, or BOTH before anything else.');
+
+  RoleHeadline := TNewStaticText.Create(RolePage);
+  RoleHeadline.Parent := RolePage.Surface;
+  RoleHeadline.Caption := 'INSTALL CLIENT, SERVER, OR BOTH';
+  RoleHeadline.Font.Name := 'Segoe UI';
+  RoleHeadline.Font.Size := 16;
+  RoleHeadline.Font.Style := [fsBold];
+  RoleHeadline.Font.Color := clMaroon;
+  RoleHeadline.AutoSize := True;
+  RoleHeadline.Left := 0;
+  RoleHeadline.Top := 0;
+
+  RoleSubhead := TNewStaticText.Create(RolePage);
+  RoleSubhead.Parent := RolePage.Surface;
+  RoleSubhead.Caption := 'Pick one option below. This is the most important step.';
+  RoleSubhead.Font.Name := 'Segoe UI';
+  RoleSubhead.Font.Size := 11;
+  RoleSubhead.Font.Style := [fsBold];
+  RoleSubhead.Font.Color := clWindowText;
+  RoleSubhead.AutoSize := True;
+  RoleSubhead.Left := 0;
+  RoleSubhead.Top := RoleHeadline.Top + RoleHeadline.Height + ScaleY(8);
+
+  TopY := RoleSubhead.Top + RoleSubhead.Height + ScaleY(18);
+
+  RoleBoth := TRadioButton.Create(RolePage);
+  RoleBoth.Parent := RolePage.Surface;
+  RoleBoth.Caption := 'BOTH  —  Client and Server (recommended)';
+  RoleBoth.Font.Name := 'Segoe UI';
+  RoleBoth.Font.Size := 12;
+  RoleBoth.Font.Style := [fsBold];
+  RoleBoth.Left := ScaleX(4);
+  RoleBoth.Top := TopY;
+  RoleBoth.Width := RolePage.SurfaceWidth - ScaleX(8);
+  RoleBoth.Height := ScaleY(24);
+  RoleBoth.Checked := '{#DefaultRole}' = 'both';
+
+  RoleHintBoth := TNewStaticText.Create(RolePage);
+  RoleHintBoth.Parent := RolePage.Surface;
+  RoleHintBoth.Caption := 'Full ERP on this PC: API/database host + desktop UI.';
+  RoleHintBoth.Font.Name := 'Segoe UI';
+  RoleHintBoth.Font.Size := 9;
+  RoleHintBoth.Left := ScaleX(28);
+  RoleHintBoth.Top := RoleBoth.Top + RoleBoth.Height + ScaleY(2);
+  RoleHintBoth.Width := RolePage.SurfaceWidth - ScaleX(32);
+  RoleHintBoth.WordWrap := True;
+
+  TopY := RoleHintBoth.Top + RoleHintBoth.Height + ScaleY(16);
+
+  RoleClient := TRadioButton.Create(RolePage);
+  RoleClient.Parent := RolePage.Surface;
+  RoleClient.Caption := 'CLIENT ONLY  —  Desktop UI';
+  RoleClient.Font.Name := 'Segoe UI';
+  RoleClient.Font.Size := 12;
+  RoleClient.Font.Style := [fsBold];
+  RoleClient.Left := ScaleX(4);
+  RoleClient.Top := TopY;
+  RoleClient.Width := RolePage.SurfaceWidth - ScaleX(8);
+  RoleClient.Height := ScaleY(24);
+  RoleClient.Checked := '{#DefaultRole}' = 'client';
+
+  RoleHintClient := TNewStaticText.Create(RolePage);
+  RoleHintClient.Parent := RolePage.Surface;
+  RoleHintClient.Caption := 'Installs the WPF client. A Ledgerly Server must already be running somewhere.';
+  RoleHintClient.Font.Name := 'Segoe UI';
+  RoleHintClient.Font.Size := 9;
+  RoleHintClient.Left := ScaleX(28);
+  RoleHintClient.Top := RoleClient.Top + RoleClient.Height + ScaleY(2);
+  RoleHintClient.Width := RolePage.SurfaceWidth - ScaleX(32);
+  RoleHintClient.WordWrap := True;
+
+  TopY := RoleHintClient.Top + RoleHintClient.Height + ScaleY(16);
+
+  RoleServer := TRadioButton.Create(RolePage);
+  RoleServer.Parent := RolePage.Surface;
+  RoleServer.Caption := 'SERVER ONLY  —  API and database';
+  RoleServer.Font.Name := 'Segoe UI';
+  RoleServer.Font.Size := 12;
+  RoleServer.Font.Style := [fsBold];
+  RoleServer.Left := ScaleX(4);
+  RoleServer.Top := TopY;
+  RoleServer.Width := RolePage.SurfaceWidth - ScaleX(8);
+  RoleServer.Height := ScaleY(24);
+  RoleServer.Checked := '{#DefaultRole}' = 'server';
+
+  RoleHintServer := TNewStaticText.Create(RolePage);
+  RoleHintServer.Parent := RolePage.Surface;
+  RoleHintServer.Caption := 'Installs the API host (default http://127.0.0.1:8000). Clients connect to it.';
+  RoleHintServer.Font.Name := 'Segoe UI';
+  RoleHintServer.Font.Size := 9;
+  RoleHintServer.Left := ScaleX(28);
+  RoleHintServer.Top := RoleServer.Top + RoleServer.Height + ScaleY(2);
+  RoleHintServer.Width := RolePage.SurfaceWidth - ScaleX(32);
+  RoleHintServer.WordWrap := True;
+
+  // Ensure a default is selected even if preprocessor string compare fails.
+  if (not RoleBoth.Checked) and (not RoleClient.Checked) and (not RoleServer.Checked) then
+    RoleBoth.Checked := True;
+
+  ApplyRoleSelection();
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  // Loud custom page replaces the stock component list.
+  Result := PageID = wpSelectComponents;
+end;
+
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
-  if CurPageID = wpSelectComponents then
+  if CurPageID = RolePage.ID then
   begin
-    if (not WizardIsComponentSelected('server')) and (not WizardIsComponentSelected('client')) then
+    if (not RoleBoth.Checked) and (not RoleClient.Checked) and (not RoleServer.Checked) then
     begin
-      MsgBox('Select at least one component: Server and/or Client.', mbError, MB_OK);
+      MsgBox('Choose CLIENT, SERVER, or BOTH before continuing.', mbError, MB_OK);
       Result := False;
+      exit;
     end;
+    ApplyRoleSelection();
   end;
 end;
-#endif
