@@ -55,6 +55,9 @@ public partial class SettingsView : UserControl
 
     private async void GrowDatabase_Click(object sender, RoutedEventArgs e) => await RunGrowDatabaseAsync();
 
+    private void DatabaseGuide_Click(object sender, RoutedEventArgs e) =>
+        EntityDialogs.ShowDatabaseAdminGuide(OwnerWindow);
+
     private async Task RunGrowDatabaseAsync()
     {
         if (!Session.IsAdministrator)

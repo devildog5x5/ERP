@@ -61,6 +61,42 @@
                     BorderBrush="#FECACA" BorderThickness="1" Background="#FEF2F2" CornerRadius="10" Padding="16">
                 <StackPanel>
                     <TextBlock Text="Danger zone" FontWeight="SemiBold" FontSize="16" Foreground="#B42318" Margin="0,0,0,8"/>
+
+                    <!-- Visible guide entry point next to refresh / wipe controls -->
+                    <Border Background="#FFF7ED" BorderBrush="#FDBA74" BorderThickness="1"
+                            CornerRadius="8" Padding="10,8" Margin="0,0,0,14">
+                        <DockPanel LastChildFill="True">
+                            <Button x:Name="DatabaseGuideInfoBtn" DockPanel.Dock="Left"
+                                    Width="28" Height="28" Margin="0,0,10,0"
+                                    VerticalAlignment="Center" Cursor="Hand"
+                                    Click="DatabaseGuide_Click"
+                                    ToolTip="Open full instructions: grow, status, backup, purge, and refresh database.">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Grid>
+                                            <Ellipse x:Name="bg" Width="28" Height="28" Fill="#1D4ED8"/>
+                                            <TextBlock Text="i" Foreground="White" FontWeight="Bold" FontSize="14"
+                                                       FontFamily="Georgia, Times New Roman, serif"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Margin="0,-1,0,0"/>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="bg" Property="Fill" Value="#1E40AF"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock FontWeight="SemiBold" Foreground="#9A3412" TextWrapping="Wrap"
+                                           Text="Database guide — grow, backup, purge &amp; refresh"/>
+                                <TextBlock Foreground="#9A3412" FontSize="12" TextWrapping="Wrap" Margin="0,2,0,0"
+                                           Text="Tap the (i) for the full step-by-step process before you change or wipe the database."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
                     <TextBlock TextWrapping="Wrap" Foreground="#667888" Margin="0,0,0,12"
                                Text="Refresh database wipes all business data, recreates the schema, and reseeds clean system defaults only (roles, admin user, tax codes, GL accounts, locations — no demo customers, suppliers, products, or orders). A backup is taken first. Administrator only. You must complete three confirmations before it runs. You will need to sign in again (admin / admin)."/>
                     <Button x:Name="RefreshDatabaseBtn" Content="Refresh database…" Style="{StaticResource DangerButton}"

@@ -804,6 +804,165 @@ public static class EntityDialogs
         return new Point(cx + radius * Math.Cos(rad), cy + radius * Math.Sin(rad));
     }
 
+    /// <summary>Full administrator guide for grow, status, backup, purge, and refresh.</summary>
+    public static void ShowDatabaseAdminGuide(Window? owner)
+    {
+        var dialog = new Window
+        {
+            Title = "Database guide — grow, backup, purge & refresh",
+            Owner = owner,
+            Width = 680,
+            Height = 720,
+            MinWidth = 520,
+            MinHeight = 480,
+            WindowStartupLocation = owner != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen,
+            ResizeMode = ResizeMode.CanResizeWithGrip,
+            Background = Brushes.White
+        };
+
+        var body = new StackPanel { Margin = new Thickness(4, 0, 4, 0) };
+
+        void AddH(string text) => body.Children.Add(new TextBlock
+        {
+            Text = text,
+            FontSize = 16,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 16, 0, 8),
+            Foreground = new SolidColorBrush(Color.FromRgb(0x15, 0x20, 0x2B))
+        });
+        void AddP(string text) => body.Children.Add(new TextBlock
+        {
+            Text = text,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 8),
+            Foreground = new SolidColorBrush(Color.FromRgb(0x2A, 0x3A, 0x48))
+        });
+        void AddBullet(string text) => body.Children.Add(new TextBlock
+        {
+            Text = "•  " + text,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(8, 0, 0, 4),
+            Foreground = new SolidColorBrush(Color.FromRgb(0x2A, 0x3A, 0x48))
+        });
+
+        AddH("Overview");
+        AddP("Coalesce stores company data in a database. By default that is a local SQLite file under %LOCALAPPDATA%\\Coalesce\\Server\\. When the shop grows, you can move to SQL Server, MySQL/MariaDB, or PostgreSQL without changing the desktop client. The buttons above the Danger zone (Grow database, Database status) and Refresh database on this page are Administrator-only.");
+
+        AddH("1. Database status (how full is it?)");
+        AddP("Open Settings → Database status… (or the pie chart summary). You will see:");
+        AddBullet("Provider type (SQLite, SQL Server, MySQL, PostgreSQL) and characteristics");
+        AddBullet("Used / free / capacity, with a fullness pie chart");
+        AddBullet("Largest tables by row count (and a share pie when useful)");
+        AddBullet("Suggestions such as backup, free disk space, purge old logs, or grow off SQLite");
+        AddP("Use Refresh status on Settings anytime to update the summary pie without opening the full dialog.");
+
+        AddH("2. Grow database (recommended scale-up)");
+        AddP("Use this when SQLite is getting large, disk is tight, or you need multi-user / server hosting. Grow copies your live data onto an empty target database and switches the server automatically.");
+        AddP("Before you start:");
+        AddBullet("Install or access SQL Server, MySQL/MariaDB, or PostgreSQL");
+        AddBullet("Create an empty database (example name: Coalesce or coalesce)");
+        AddBullet("Have a login that can connect and create tables");
+        AddBullet("Keep the Coalesce Server running — Grow runs through the API");
+        AddP("Steps in Settings → Grow database…:");
+        AddBullet("Choose database type: SqlServer, MySql, or PostgreSql");
+        AddBullet("Enter Host, Port (defaults: 1433 / 3306 / 5432), and Database name");
+        AddBullet("SQL Server: leave Windows authentication checked when using a Windows login; otherwise enter User Id and Password");
+        AddBullet("MySQL / PostgreSQL: enter Username and Password");
+        AddBullet("Choose Copy my data (recommended) or Start empty on the new database");
+        AddBullet("Optional: paste a full connection string in Advanced to override the fields");
+        AddBullet("Click Test connection — fix any errors before continuing");
+        AddBullet("Type GROW DATABASE exactly (case-sensitive) to enable Grow database");
+        AddBullet("Click Grow database — Coalesce takes a backup first, copies data (users, ERP, CRM), then switches server.json");
+        AddBullet("Sign in again when prompted; default remains admin / admin unless you changed users");
+        AddP("After a successful grow, Database status should show the new provider. Keep the original SQLite backup until you have verified the new database for a few days.");
+
+        AddH("3. Backup");
+        AddP("From Database status → Backup now, or Integrations → Backup:");
+        AddBullet("SQLite: copies the .db file into %LOCALAPPDATA%\\Coalesce\\Backups\\");
+        AddBullet("SQL Server / MySQL / PostgreSQL: writes a reminder note; use your vendor backup tools (SSMS, mysqldump, pg_dump) for a full restore");
+        AddP("Always backup before Grow, Purge, or Refresh.");
+
+        AddH("4. Purge old logs (safe cleanup)");
+        AddP("When audit logs or resolved reminders are huge, use Purge old logs… from Database status:");
+        AddBullet("Removes audit logs older than 180 days");
+        AddBullet("Removes resolved reminders older than 90 days");
+        AddBullet("Does NOT delete orders, inventory, partners, CRM accounts, or users");
+        AddBullet("Requires typing PURGE MAINTENANCE to confirm");
+
+        AddH("5. Refresh database (full wipe — Danger zone)");
+        AddP("Refresh database is destructive. It is for a clean system reset (demo machines, corrupted local data, starting over). It is not how you grow capacity.");
+        AddP("What it does:");
+        AddBullet("Creates a backup first");
+        AddBullet("Deletes the database contents / file and recreates the schema");
+        AddBullet("Seeds only system defaults: roles, admin user, tax codes, GL accounts, locations");
+        AddBullet("Does NOT restore demo customers, suppliers, products, or orders");
+        AddBullet("Invalidates all sessions — you must sign in again as admin / admin");
+        AddP("How to run it safely:");
+        AddBullet("Confirm you have a backup you can restore if needed");
+        AddBullet("Click Refresh database…");
+        AddBullet("Complete all three confirmation steps (two checkboxes + type REFRESH DATABASE)");
+        AddBullet("Wait for the progress bar to finish, then sign in again");
+        AddP("Do not use Refresh if you only need more space — use Grow database instead.");
+
+        AddH("6. Grow vs Refresh — quick chooser");
+        AddBullet("Need more capacity / multi-user / hosted DB → Grow database");
+        AddBullet("Want to wipe everything and start clean → Refresh database");
+        AddBullet("Just checking size / health → Database status");
+        AddBullet("Old logs filling space but keep business data → Purge old logs");
+
+        AddH("7. Optional command line");
+        AddP("If you prefer not to use the UI, on the server machine you can still run:");
+        AddBullet("Coalesce.Server.exe migrate --provider SqlServer --connection \"...\"");
+        AddBullet("Coalesce.Server.exe set-db --provider MySql --connection \"...\"");
+        AddP("The Grow database wizard is the supported in-app path for the same outcome.");
+
+        AddH("8. Where files live");
+        AddBullet("Config & SQLite: %LOCALAPPDATA%\\Coalesce\\Server\\ (server.json, coalesce.db)");
+        AddBullet("Backups: %LOCALAPPDATA%\\Coalesce\\Backups\\");
+        AddBullet("Client API URL: Settings → API base URL (default http://127.0.0.1:8000)");
+
+        var close = new Button
+        {
+            Content = "Close",
+            Style = (Style)Application.Current.FindResource("PrimaryButton"),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            MinWidth = 100,
+            Margin = new Thickness(0, 16, 0, 0),
+            IsCancel = true,
+            IsDefault = true
+        };
+        close.Click += (_, _) => dialog.DialogResult = true;
+
+        var root = new DockPanel { Margin = new Thickness(20) };
+        DockPanel.SetDock(close, Dock.Bottom);
+        root.Children.Add(close);
+        root.Children.Add(new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = body
+        });
+
+        // Intro banner at top of body
+        body.Children.Insert(0, new Border
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0xEF, 0xF6, 0xFF)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(0xBF, 0xDB, 0xFE)),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(12),
+            Margin = new Thickness(0, 0, 0, 4),
+            Child = new TextBlock
+            {
+                Text = "Read this before you grow the database or use Refresh database. Growing moves you to a larger server database; Refresh wipes business data and starts clean.",
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = new SolidColorBrush(Color.FromRgb(0x1E, 0x3A, 0x5F))
+            }
+        });
+
+        dialog.Content = root;
+        dialog.ShowDialog();
+    }
+
     /// <summary>
     /// Guided grow wizard. Returns true if the database was grown successfully.
     /// </summary>
