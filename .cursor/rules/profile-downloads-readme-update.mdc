@@ -1,0 +1,22 @@
+---
+description: When updating the central GitHub profile downloads page, refresh Ledgerly/ERP installer links from latest releases.
+alwaysApply: true
+---
+
+# Profile downloads page (`devildog5x5` README)
+
+When the user asks to **update the profile downloads**, **update the central download links**, **refresh devildog5x5**, or **update them** in that context:
+
+1. Prefer the shared updater if present (sibling of this repo):
+   ```powershell
+   powershell -NoProfile -ExecutionPolicy Bypass -File ..\ONVIF-ODM\scripts\update-profile-downloads-readme.ps1
+   ```
+   Use `-Commit` when they want it published. Edit that script’s `$Sections` if Ledgerly/ERP is missing or asset names changed.
+
+2. If the script is unavailable or ERP is not configured, update `devildog5x5\README.md` manually with **verbatim** latest-release URLs from:
+   ```powershell
+   gh release view --repo devildog5x5/ERP --json tagName,assets,url
+   ```
+   Include Combined (`LedgerlySetup.exe`), Client (`LedgerlyClientSetup.exe`), and Server (`LedgerlyServerSetup.exe`) when those assets exist.
+
+3. Requirements: GitHub CLI authenticated (`gh auth login`). Do not invent download URLs.

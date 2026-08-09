@@ -1,0 +1,48 @@
+---
+description: Release SOP — commit/push, build, README Downloads links, chat handoff for Client/Server/combined installers.
+alwaysApply: true
+---
+
+# Release, handoff, and README SOP (Ledgerly ERP)
+
+When the user asks for a **shipping build**, **release**, **hotfix binaries**, **SOP completion**, or finishing work that affects **downloadable installers** or **README download docs**, do **all** that apply—**without waiting to be reminded**.
+
+## Git (when code or README download docs change)
+
+1. `git status` — no unintended files.
+2. Commit with a clear message (why / what).
+3. `git push` to the user’s branch (usually `main`). Diagnose push failures; do not end with “you should push.”
+
+## Builds
+
+1. `dotnet build` Shared → Server → Client **`-c Release`**.
+2. When packaging installers: use `build_installers.ps1` / `installer/ledgerly.iss` **if** that pipeline matches the current C# outputs; otherwise publish/copy Release binaries and compile Inno Setup so assets exist before uploading.
+3. Expected release asset names (update README if names change):
+   - `LedgerlySetup.exe` — combined (Client and/or Server)
+   - `LedgerlyClientSetup.exe` — client only
+   - `LedgerlyServerSetup.exe` — server only
+
+## README Downloads (required for a new Release)
+
+1. Update **`README.md` → Downloads** with **verbatim** HTTPS links:
+   `https://github.com/devildog5x5/ERP/releases/download/{tag}/{asset}`
+2. Keep the table rows for **Combined**, **Client only**, and **Server only** honest — if an asset is only on an older tag, link that tag; do not imply an old installer is the newest code.
+3. Refresh latest-release notes (tag links, default login `admin`/`admin`, API `http://127.0.0.1:8000`).
+4. **Never invent** working `releases/download/...` URLs. Use `gh release view {tag} --json assets` after upload.
+5. Commit and push the README with the release.
+
+## Chat handoff — **### New build links** (every rebuild / release)
+
+| Line | Content |
+|------|---------|
+| **Combined** | Full URL to `LedgerlySetup.exe` (or Local path if not uploaded) |
+| **Client** | Full URL to `LedgerlyClientSetup.exe` (or Local path) |
+| **Server** | Full URL to `LedgerlyServerSetup.exe` (or Local path) |
+| **Release page** | `https://github.com/devildog5x5/ERP/releases/tag/{tag}` |
+| **Local smoke** | Full paths to `Ledgerly.Server.exe` and `Ledgerly.Client.exe` when built locally |
+
+Do **not** end with “see README” as the only download hint.
+
+## Limits
+
+- Creating tags / uploading release assets needs `gh` auth. If upload fails: still build locally, update README as pending if needed, push commits, and give **exact filenames** + intended URLs for the user to finish upload.

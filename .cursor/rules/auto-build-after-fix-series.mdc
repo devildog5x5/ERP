@@ -1,0 +1,28 @@
+---
+description: After build-related fix series, Release-build Client/Server and hand off runnable paths + download links without waiting to be asked.
+alwaysApply: true
+---
+
+# Auto-build after build fix series (Ledgerly ERP)
+
+When you finish a **connected set of changes** that fix or materially affect **compilation, packaging, installers, CI, auth/startup, or runnable client/server behavior**, do **not** end the turn until you have:
+
+1. Build Release:
+   ```powershell
+   dotnet build src/Ledgerly.Shared -c Release
+   dotnet build src/Ledgerly.Server -c Release
+   dotnet build src/Ledgerly.Client -c Release
+   ```
+2. If desktop/server behavior changed, stop old processes and smoke-launch:
+   ```powershell
+   Get-Process Ledgerly.Client,Ledgerly.Server -ErrorAction SilentlyContinue | Stop-Process -Force
+   Start-Process src\Ledgerly.Server\bin\Release\net48\Ledgerly.Server.exe -WorkingDirectory src\Ledgerly.Server
+   Start-Sleep -Seconds 2
+   Start-Process src\Ledgerly.Client\bin\Release\net48-windows\Ledgerly.Client.exe -WorkingDirectory src\Ledgerly.Client
+   ```
+3. In the reply, give **full paths** to the `.exe` files to run.
+4. Paste a **### New build links** block (see `release-handoff-and-readme-sop.mdc`) with current GitHub Release download URLs from `gh release list` / `gh release view` — **never invent** `releases/download/...` URLs. If only local binaries exist, say **Local build** and give the paths.
+
+Do this **automatically**; do not wait for “build it,” “so we can test,” or “give me download links.”
+
+Full Inno installers / new GitHub Release tags remain **only when** the user asks for a shipping drop or the release SOP.
