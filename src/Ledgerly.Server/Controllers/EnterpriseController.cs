@@ -59,14 +59,53 @@ public class EnterpriseController : ApiController
         });
     }
 
-    [HttpGet, Route("roles")]
+    [HttpPost, Route("auth/change-password")]
+    public IHttpActionResult ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        var me = UserEntity;
+        if (me is null) return Unauthorized();
+        if (dto == null || string.IsNullOrWhiteSpace(dto.NewPassword))
+            return BadRequest("New password required");
+        if (dto.NewPassword.Trim().Length < 4)
+            return BadRequest("New password must be at least 4 characters");
+
+        using var db = Db.Create();
+        var user = db.Users.Include(u => u.Role).FirstOrDefault(u => u.Id == me.Id);
+        if (user is null) return Unauthorized();
+        if (!PasswordHasher.Verify(dto.CurrentPassword ?? "", user.PasswordHash, user.PasswordSalt))
+            return BadRequest("Current password is incorrect");
+
+        var (hash, salt) = PasswordHasher.Hash(dto.NewPassword.Trim());
+        user.PasswordHash = hash;
+        user.PasswordSalt = salt;
+        // Invalidate other sessions
+        var tokens = db.AuthTokens.Where(t => t.UserId == user.Id).ToList();
+        db.AuthTokens.RemoveRange(tokens);
+        var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+        var expires = DateTime.UtcNow.AddHours(12);
+        db.AuthTokens.Add(new AuthToken { UserId = user.Id, Token = token, ExpiresAt = expires });
+        AuditService.Write(db, user.Id, user.UserName, "change-password", "user", user.Id);
+        db.SaveChanges();
+        return Ok(new LoginResponseDto
+        {
+            Token = token,
+            UserId = user.Id,
+            UserName = user.UserName,
+            DisplayName = user.DisplayName,
+            Role = user.Role.Name,
+            Permissions = user.Role.Permissions,
+            ExpiresAt = expires
+        });
+    }
+
+    [HttpGet, Route("roles"), RequirePermission("users")]
     public IHttpActionResult Roles()
     {
         using var db = Db.Create();
         return Ok(db.Roles.OrderBy(r => r.Name).Select(r => new RoleDto { Id = r.Id, Name = r.Name, Permissions = r.Permissions }).ToList());
     }
 
-    [HttpGet, Route("users")]
+    [HttpGet, Route("users"), RequirePermission("users")]
     public IHttpActionResult Users()
     {
         using var db = Db.Create();
@@ -76,26 +115,99 @@ public class EnterpriseController : ApiController
         }).ToList());
     }
 
-    [HttpPost, Route("users")]
+    [HttpPost, Route("users"), RequirePermission("users")]
     public IHttpActionResult CreateUser([FromBody] UserCreateDto dto)
     {
+        // Assigning access levels (roles) is Administrator-only.
+        if (!RequestAuth.IsAdministrator(UserEntity))
+            return ResponseMessage(Request.CreateResponse(System.Net.HttpStatusCode.Forbidden,
+                "Only an Administrator can create users and assign access levels."));
         if (dto == null || string.IsNullOrWhiteSpace(dto.UserName) || string.IsNullOrWhiteSpace(dto.Password))
             return BadRequest("User name and password required");
         using var db = Db.Create();
         if (db.Users.Any(u => u.UserName == dto.UserName)) return BadRequest("User exists");
+        var role = db.Roles.FirstOrDefault(r => r.Id == dto.RoleId);
+        if (role is null) return BadRequest("Role not found");
         var (hash, salt) = PasswordHasher.Hash(dto.Password);
         var user = new AppUser
         {
-            UserName = dto.UserName.Trim(), DisplayName = string.IsNullOrWhiteSpace(dto.DisplayName) ? dto.UserName : dto.DisplayName.Trim(),
-            PasswordHash = hash, PasswordSalt = salt, RoleId = dto.RoleId, IsActive = true
+            UserName = dto.UserName.Trim(),
+            DisplayName = string.IsNullOrWhiteSpace(dto.DisplayName) ? dto.UserName.Trim() : dto.DisplayName.Trim(),
+            PasswordHash = hash,
+            PasswordSalt = salt,
+            RoleId = role.Id,
+            IsActive = true
         };
         db.Users.Add(user);
-        AuditService.Write(db, UserEntity?.Id, UserEntity?.UserName ?? "", "create", "user", null, user.UserName);
+        AuditService.Write(db, UserEntity?.Id, UserEntity?.UserName ?? "", "create", "user", null,
+            $"{user.UserName} role={role.Name}");
         db.SaveChanges();
-        return Ok(new UserDto { Id = user.Id, UserName = user.UserName, DisplayName = user.DisplayName, RoleId = user.RoleId, IsActive = true });
+        return Ok(new UserDto
+        {
+            Id = user.Id,
+            UserName = user.UserName,
+            DisplayName = user.DisplayName,
+            RoleId = user.RoleId,
+            RoleName = role.Name,
+            IsActive = true
+        });
     }
 
-    [HttpGet, Route("audit-logs")]
+    [HttpPost, Route("users/{id:int}/reset-password"), RequirePermission("users")]
+    public IHttpActionResult ResetPassword(int id, [FromBody] ResetPasswordDto dto)
+    {
+        if (!RequestAuth.IsAdministrator(UserEntity))
+            return ResponseMessage(Request.CreateResponse(System.Net.HttpStatusCode.Forbidden,
+                "Only an Administrator can reset passwords."));
+        if (dto == null || string.IsNullOrWhiteSpace(dto.NewPassword))
+            return BadRequest("New password required");
+        if (dto.NewPassword.Trim().Length < 4)
+            return BadRequest("New password must be at least 4 characters");
+
+        using var db = Db.Create();
+        var user = db.Users.FirstOrDefault(u => u.Id == id);
+        if (user is null) return NotFound();
+
+        var (hash, salt) = PasswordHasher.Hash(dto.NewPassword.Trim());
+        user.PasswordHash = hash;
+        user.PasswordSalt = salt;
+        var tokens = db.AuthTokens.Where(t => t.UserId == id).ToList();
+        db.AuthTokens.RemoveRange(tokens);
+        AuditService.Write(db, UserEntity?.Id, UserEntity?.UserName ?? "", "reset-password", "user", id, user.UserName);
+        db.SaveChanges();
+        return Ok(new { reset = true });
+    }
+
+    [HttpDelete, Route("users/{id:int}"), RequirePermission("users")]
+    public IHttpActionResult DeleteUser(int id)
+    {
+        if (!RequestAuth.IsAdministrator(UserEntity))
+            return ResponseMessage(Request.CreateResponse(System.Net.HttpStatusCode.Forbidden,
+                "Only an Administrator can delete users."));
+        if (UserEntity != null && UserEntity.Id == id)
+            return BadRequest("You cannot delete your own account while signed in.");
+
+        using var db = Db.Create();
+        var user = db.Users.Include(u => u.Role).FirstOrDefault(u => u.Id == id);
+        if (user is null) return NotFound();
+
+        if (RequestAuth.IsAdministrator(user))
+        {
+            var otherAdmins = db.Users.Include(u => u.Role).AsEnumerable()
+                .Count(u => u.Id != id && u.IsActive && RequestAuth.IsAdministrator(u));
+            if (otherAdmins == 0)
+                return BadRequest("Cannot delete the last Administrator account.");
+        }
+
+        var tokens = db.AuthTokens.Where(t => t.UserId == id).ToList();
+        db.AuthTokens.RemoveRange(tokens);
+        AuditService.Write(db, UserEntity?.Id, UserEntity?.UserName ?? "", "delete", "user", id, user.UserName);
+        db.Users.Remove(user);
+        db.SaveChanges();
+        return Ok(new { deleted = true });
+    }
+
+    [HttpGet, Route("audit-logs"), RequirePermission("audit")]
     public IHttpActionResult AuditLogs(int take = 200)
     {
         using var db = Db.Create();
@@ -116,7 +228,7 @@ public class EnterpriseController : ApiController
             .Select(l => new LocationDto { Id = l.Id, Code = l.Code, Name = l.Name, Bin = l.Bin, IsActive = l.IsActive }).ToList());
     }
 
-    [HttpPost, Route("locations")]
+    [HttpPost, Route("locations"), RequirePermission("locations")]
     public IHttpActionResult CreateLocation([FromBody] LocationDto dto)
     {
         if (dto == null || string.IsNullOrWhiteSpace(dto.Code)) return BadRequest("Code required");
@@ -140,7 +252,7 @@ public class EnterpriseController : ApiController
         }).ToList());
     }
 
-    [HttpPost, Route("transfers")]
+    [HttpPost, Route("transfers"), RequirePermission("warehouse")]
     public IHttpActionResult Transfer([FromBody] TransferCreateDto dto)
     {
         if (dto == null || dto.Quantity <= 0) return BadRequest("Invalid transfer");
@@ -261,6 +373,7 @@ public class EnterpriseController : ApiController
     [HttpPost, Route("tax-codes")]
     public IHttpActionResult CreateTax([FromBody] TaxCodeDto dto)
     {
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Code)) return BadRequest("Code required");
         using var db = Db.Create();
         var t = new TaxCode { Code = dto.Code.Trim(), Name = dto.Name, Rate = dto.Rate, IsActive = true };
         db.TaxCodes.Add(t);
@@ -478,7 +591,7 @@ public class EnterpriseController : ApiController
             .Select(p => new FiscalPeriodDto { Id = p.Id, Name = p.Name, StartDate = p.StartDate, EndDate = p.EndDate, IsClosed = p.IsClosed }).ToList());
     }
 
-    [HttpPost, Route("fiscal-periods/{id:int}/close")]
+    [HttpPost, Route("fiscal-periods/{id:int}/close"), RequirePermission("finance")]
     public IHttpActionResult ClosePeriod(int id)
     {
         using var db = Db.Create();
@@ -578,6 +691,7 @@ public class EnterpriseController : ApiController
     [HttpPost, Route("sales-orders/{id:int}/ship")]
     public IHttpActionResult Ship(int id, [FromBody] ShipOrderDto dto)
     {
+        if (dto?.Lines == null || dto.Lines.Count == 0) return BadRequest("Ship lines required");
         using var db = Db.Create();
         var so = db.SalesOrders.Include(s => s.Lines).ThenInclude(l => l.Product).Include(s => s.Customer)
             .FirstOrDefault(s => s.Id == id);
@@ -603,7 +717,7 @@ public class EnterpriseController : ApiController
         return Ok(so.ToDto());
     }
 
-    [HttpPost, Route("purchase-orders/{id:int}/approve")]
+    [HttpPost, Route("purchase-orders/{id:int}/approve"), RequirePermission("approvals")]
     public IHttpActionResult ApprovePo(int id)
     {
         using var db = Db.Create();
@@ -694,6 +808,8 @@ public class EnterpriseController : ApiController
     [HttpPost, Route("webhooks")]
     public IHttpActionResult CreateWebhook([FromBody] WebhookDto dto)
     {
+        if (dto == null || string.IsNullOrWhiteSpace(dto.EventName) || string.IsNullOrWhiteSpace(dto.TargetUrl))
+            return BadRequest("EventName and TargetUrl required");
         using var db = Db.Create();
         var w = new WebhookSubscription { EventName = dto.EventName, TargetUrl = dto.TargetUrl, IsActive = true };
         db.Webhooks.Add(w);
@@ -706,8 +822,15 @@ public class EnterpriseController : ApiController
     {
         using var db = Db.Create();
         var raw = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
-        var (hash, _) = PasswordHasher.Hash(raw);
-        var key = new ApiKey { Name = dto?.UserName ?? "API Key", KeyHash = hash, KeyPrefix = raw.Substring(0, 8), IsActive = true };
+        var (hash, salt) = PasswordHasher.Hash(raw);
+        // Persist salt with hash (KeyHash has no separate salt column).
+        var key = new ApiKey
+        {
+            Name = string.IsNullOrWhiteSpace(dto?.UserName) ? "API Key" : dto!.UserName.Trim(),
+            KeyHash = salt + "|" + hash,
+            KeyPrefix = raw.Substring(0, 8),
+            IsActive = true
+        };
         db.ApiKeys.Add(key);
         db.SaveChanges();
         return Ok(new ApiKeyCreatedDto { Id = key.Id, Name = key.Name, ApiKey = raw, KeyPrefix = key.KeyPrefix });
@@ -750,7 +873,7 @@ public class EnterpriseController : ApiController
         return Ok(new { csv });
     }
 
-    [HttpPost, Route("backup")]
+    [HttpPost, Route("backup"), RequirePermission("backup")]
     public IHttpActionResult Backup()
     {
         var result = BackupService.Backup();
@@ -760,12 +883,19 @@ public class EnterpriseController : ApiController
         return Ok(result);
     }
 
-    [HttpPost, Route("backup/restore")]
+    [HttpPost, Route("backup/restore"), RequirePermission("backup")]
     public IHttpActionResult Restore([FromBody] BackupResultDto dto)
     {
         if (dto == null || string.IsNullOrWhiteSpace(dto.Path)) return BadRequest("Path required");
-        BackupService.RestoreSqlite(dto.Path);
-        return Ok(new { restored = true });
+        try
+        {
+            BackupService.RestoreSqlite(dto.Path);
+            return Ok(new { restored = true });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet, Route("backup/list")]

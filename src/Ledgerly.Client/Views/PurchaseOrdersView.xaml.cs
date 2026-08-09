@@ -26,8 +26,10 @@ public partial class PurchaseOrdersView : UserControl
     private async void Approve_Click(object sender, RoutedEventArgs e)
     {
         if (Grid.SelectedItem is not PurchaseOrderDto selected) return;
+        if (sender is UIElement btn) btn.IsEnabled = false;
         try { await App.Api.ApprovePoAsync(selected.Id); await LoadAsync(); }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }
+        finally { if (sender is UIElement b) b.IsEnabled = true; }
     }
 
     private async void Print_Click(object sender, RoutedEventArgs e)
@@ -40,6 +42,7 @@ public partial class PurchaseOrdersView : UserControl
     private async void Bill_Click(object sender, RoutedEventArgs e)
     {
         if (Grid.SelectedItem is not PurchaseOrderDto selected) return;
+        if (sender is UIElement btn) btn.IsEnabled = false;
         try
         {
             await App.Api.CreateVendorBillAsync(new VendorBillCreateDto
@@ -51,6 +54,7 @@ public partial class PurchaseOrdersView : UserControl
             MessageBox.Show("Vendor bill created.", "Ledgerly");
         }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }
+        finally { if (sender is UIElement b) b.IsEnabled = true; }
     }
 
     private async void Add_Click(object sender, RoutedEventArgs e)

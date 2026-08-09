@@ -6,6 +6,21 @@ Windows client/server ERP for small businesses: inventory, purchasing, sales, su
 
 Built with **C# / .NET Framework 4.8** — the correct target when Windows 7 must be supported. Newer .NET (5/6/7/8/10) only supports Windows 10+.
 
+## Downloads
+
+Installers are published on the [GitHub Releases](https://github.com/devildog5x5/ERP/releases) page.
+
+| Package | What it installs | Download |
+|---------|------------------|----------|
+| **Combined (Client + Server)** | Full installer with options for Client only, Server only, or both | [LedgerlySetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.1.0/LedgerlySetup.exe) |
+| **Client only** | Desktop UI (connects to a running Ledgerly Server) | [LedgerlyClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.0.0/LedgerlyClientSetup.exe) |
+| **Server only** | API / database host | [LedgerlyServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.0.0/LedgerlyServerSetup.exe) |
+
+- Latest combined release: [v1.1.0](https://github.com/devildog5x5/ERP/releases/tag/v1.1.0)
+- Separate client/server installers: [v1.0.0](https://github.com/devildog5x5/ERP/releases/tag/v1.0.0)
+- Default login after install: `admin` / `admin`
+- Server listens at `http://127.0.0.1:8000` by default
+
 ## Requirements
 
 - **Windows 7 SP1 or later**

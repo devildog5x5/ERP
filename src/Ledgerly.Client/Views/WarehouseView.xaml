@@ -1,14 +1,15 @@
 <UserControl x:Class="Ledgerly.Client.Views.WarehouseView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:svc="clr-namespace:Ledgerly.Client.Services">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel>
             <TextBlock Text="Touch-friendly warehouse tools" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12"/>
             <WrapPanel Margin="0,0,0,16">
-                <Button Content="Transfer stock" Style="{StaticResource PrimaryButton}" Margin="0,0,10,10" Padding="20,16" Click="Transfer_Click"/>
-                <Button Content="Cycle count" Style="{StaticResource SecondaryButton}" Margin="0,0,10,10" Padding="20,16" Click="Count_Click"/>
-                <Button Content="Add location" Style="{StaticResource SecondaryButton}" Margin="0,0,10,10" Padding="20,16" Click="AddLoc_Click"/>
-                <Button Content="Build kit (BOM)" Style="{StaticResource SecondaryButton}" Margin="0,0,10,10" Padding="20,16" Click="BuildBom_Click"/>
+                <Button Content="Transfer stock" Style="{StaticResource PrimaryButton}" Margin="0,0,10,10" Padding="20,16" Click="Transfer_Click" svc:Access.Permission="warehouse"/>
+                <Button Content="Cycle count" Style="{StaticResource SecondaryButton}" Margin="0,0,10,10" Padding="20,16" Click="Count_Click" svc:Access.Permission="warehouse"/>
+                <Button Content="Add location" Style="{StaticResource SecondaryButton}" Margin="0,0,10,10" Padding="20,16" Click="AddLoc_Click" svc:Access.Permission="locations"/>
+                <Button Content="Build kit (BOM)" Style="{StaticResource SecondaryButton}" Margin="0,0,10,10" Padding="20,16" Click="BuildBom_Click" svc:Access.Permission="warehouse"/>
             </WrapPanel>
             <TextBlock Text="Stock by location" FontWeight="SemiBold" Margin="0,0,0,8"/>
             <DataGrid x:Name="LocGrid" AutoGenerateColumns="False" IsReadOnly="True" Height="220"

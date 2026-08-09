@@ -38,6 +38,17 @@ public class UserCreateDto
     public int RoleId { get; set; }
 }
 
+public class ChangePasswordDto
+{
+    public string CurrentPassword { get; set; } = "";
+    public string NewPassword { get; set; } = "";
+}
+
+public class ResetPasswordDto
+{
+    public string NewPassword { get; set; } = "";
+}
+
 public class RoleDto
 {
     public int Id { get; set; }

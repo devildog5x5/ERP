@@ -1,6 +1,7 @@
 ﻿<Window x:Class="Ledgerly.Client.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:svc="clr-namespace:Ledgerly.Client.Services"
         Title="Ledgerly ERP"
         Height="780" Width="1280"
         MinHeight="640" MinWidth="980"
@@ -37,35 +38,38 @@
                     </StackPanel>
                 </Border>
 
-                <StackPanel>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel>
-                    <TextBlock Text="OVERVIEW" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,0,0,6"/>
-                    <Button Content="Dashboard" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="dashboard"/>
-                    <Button Content="Scan station" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="scan"/>
-                    <Button Content="Reports" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="reports"/>
-                    <Button Content="Reminders" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="reminders"/>
+                <!-- Fill child of DockPanel must be ScrollViewer (not a StackPanel) or nav items get clipped with no scrollbar. -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                              VerticalAlignment="Stretch" Margin="0,0,0,0">
+                    <StackPanel x:Name="NavPanel">
+                        <TextBlock x:Name="NavOverviewHeader" Text="OVERVIEW" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,0,0,6"/>
+                        <Button Content="Dashboard" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="dashboard" svc:Access.Permission="dashboard"/>
+                        <Button Content="Scan station" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="scan" svc:Access.Permission="scan"/>
+                        <Button Content="Reports" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="reports" svc:Access.Permission="reports"/>
+                        <Button Content="Reminders" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="reminders" svc:Access.Permission="reminders"/>
 
-                    <TextBlock Text="OPERATIONS" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
-                    <Button Content="Inventory" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="inventory"/>
-                    <Button Content="Warehouse" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="warehouse"/>
-                    <Button Content="Purchasing" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="purchasing"/>
-                    <Button Content="Sales" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="sales"/>
+                        <TextBlock x:Name="NavOperationsHeader" Text="OPERATIONS" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
+                        <Button Content="Inventory" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="inventory" svc:Access.Permission="inventory"/>
+                        <Button Content="Warehouse" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="warehouse" svc:Access.Permission="warehouse"/>
+                        <Button Content="Purchasing" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="purchasing" svc:Access.Permission="purchasing"/>
+                        <Button Content="Sales" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="sales" svc:Access.Permission="sales"/>
 
-                    <TextBlock Text="DIRECTORY" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
-                    <Button Content="Suppliers" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="suppliers"/>
-                    <Button Content="Customers" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="customers"/>
+                        <TextBlock x:Name="NavDirectoryHeader" Text="DIRECTORY" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
+                        <Button Content="Suppliers" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="suppliers" svc:Access.Permission="partners"/>
+                        <Button Content="Customers" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="customers" svc:Access.Permission="partners"/>
 
-                    <TextBlock Text="FINANCE" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
-                    <Button Content="Finance / GL" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="finance"/>
+                        <TextBlock x:Name="NavFinanceHeader" Text="FINANCE" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
+                        <Button Content="Finance / GL" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="finance" svc:Access.Permission="finance"/>
 
-                    <TextBlock Text="SYSTEM" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
-                    <Button Content="Users" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="users"/>
-                    <Button Content="Integrations" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="integrations"/>
-                    <Button Content="Settings" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="settings"/>
+                        <TextBlock x:Name="NavSecurityHeader" Text="SECURITY" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
+                        <Button x:Name="NavUsersBtn" Content="Users &amp; access" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="users"/>
+                        <Button x:Name="NavPasswordBtn" Content="Change password" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="password"/>
+
+                        <TextBlock x:Name="NavSystemHeader" Text="SYSTEM" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
+                        <Button Content="Integrations" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="integrations" svc:Access.Permission="integrations"/>
+                        <Button Content="Settings" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="settings" svc:Access.Permission="settings"/>
                     </StackPanel>
-                    </ScrollViewer>
-                </StackPanel>
+                </ScrollViewer>
             </DockPanel>
         </Border>
 
@@ -87,7 +91,7 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
                     <Button x:Name="SecondaryAction" Content="Run reminder scan" Style="{StaticResource SecondaryButton}"
-                            Margin="0,0,10,0" Click="SecondaryAction_Click"/>
+                            Margin="0,0,10,0" Click="SecondaryAction_Click" svc:Access.Permission="reminders"/>
                     <Button x:Name="PrimaryAction" Content="Refresh" Style="{StaticResource PrimaryButton}"
                             Click="PrimaryAction_Click"/>
                 </StackPanel>

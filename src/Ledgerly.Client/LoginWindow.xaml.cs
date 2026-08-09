@@ -1,6 +1,5 @@
 using System;
 using System.Windows;
-using System.Windows.Input;
 using Ledgerly.Client.Services;
 using Ledgerly.Shared;
 
@@ -8,6 +7,8 @@ namespace Ledgerly.Client;
 
 public partial class LoginWindow : Window
 {
+    private bool _busy;
+
     public LoginWindow()
     {
         InitializeComponent();
@@ -17,12 +18,14 @@ public partial class LoginWindow : Window
             PassBox.Focus();
             PassBox.SelectAll();
         };
-        PassBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) Login_Click(this, new RoutedEventArgs()); };
     }
 
     private async void Login_Click(object sender, RoutedEventArgs e)
     {
+        if (_busy) return;
+        _busy = true;
         ErrorText.Text = "";
+        SetBusy(true);
         try
         {
             var result = await App.Api.LoginAsync(new LoginRequestDto
@@ -30,6 +33,7 @@ public partial class LoginWindow : Window
                 UserName = UserBox.Text.Trim(),
                 Password = PassBox.Password
             });
+            if (!IsLoaded) return;
             if (result == null || string.IsNullOrWhiteSpace(result.Token))
             {
                 ErrorText.Text = "Login failed.";
@@ -38,11 +42,24 @@ public partial class LoginWindow : Window
             Session.Current = result;
             App.Api.SetAuthToken(result.Token);
             DialogResult = true;
-            Close();
         }
         catch (Exception ex)
         {
-            ErrorText.Text = ex.Message;
+            if (IsLoaded)
+                ErrorText.Text = ex.Message;
         }
+        finally
+        {
+            _busy = false;
+            if (IsLoaded)
+                SetBusy(false);
+        }
+    }
+
+    private void SetBusy(bool busy)
+    {
+        UserBox.IsEnabled = !busy;
+        PassBox.IsEnabled = !busy;
+        LoginBtn.IsEnabled = !busy;
     }
 }

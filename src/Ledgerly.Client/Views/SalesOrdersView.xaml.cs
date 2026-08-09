@@ -42,6 +42,7 @@ public partial class SalesOrdersView : UserControl
         if (Grid.SelectedItem is not SalesOrderDto selected) return;
         var amt = EntityDialogs.PromptDecimal(OwnerWindow, "Payment", $"Amount for {selected.OrderNumber}", selected.Total.ToString());
         if (amt is null or <= 0) return;
+        if (sender is UIElement btn) btn.IsEnabled = false;
         try
         {
             var banks = await App.Api.GetBankAccountsAsync();
@@ -56,6 +57,7 @@ public partial class SalesOrdersView : UserControl
             await LoadAsync();
         }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }
+        finally { if (sender is UIElement b) b.IsEnabled = true; }
     }
 
     private async void Return_Click(object sender, RoutedEventArgs e)

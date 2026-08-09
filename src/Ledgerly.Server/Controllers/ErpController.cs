@@ -27,7 +27,7 @@ public class ErpController : ApiController
         return Ok(GetOrCreateSettings(db).ToDto());
     }
 
-    [HttpPut, Route("settings")]
+    [HttpPut, Route("settings"), RequirePermission("settings")]
     public IHttpActionResult UpdateSettings([FromBody] SettingsDto dto)
     {
         if (dto == null) return BadRequest("Body required");
@@ -43,7 +43,8 @@ public class ErpController : ApiController
         s.SmtpHost = dto.SmtpHost;
         s.SmtpPort = dto.SmtpPort <= 0 ? 587 : dto.SmtpPort;
         s.SmtpUsername = dto.SmtpUsername;
-        if (!string.IsNullOrWhiteSpace(dto.SmtpPassword)) s.SmtpPassword = dto.SmtpPassword;
+        if (!string.IsNullOrWhiteSpace(dto.SmtpPassword) && dto.SmtpPassword != "********")
+            s.SmtpPassword = dto.SmtpPassword;
         s.SmtpEnableSsl = dto.SmtpEnableSsl;
         s.SmtpFrom = dto.SmtpFrom;
         s.PoApprovalThreshold = dto.PoApprovalThreshold;
@@ -53,7 +54,7 @@ public class ErpController : ApiController
         return Ok(s.ToDto());
     }
 
-    [HttpGet, Route("dashboard")]
+    [HttpGet, Route("dashboard"), RequirePermission("dashboard")]
     public DashboardDto Dashboard()
     {
         using var db = Db.Create();
@@ -109,7 +110,7 @@ public class ErpController : ApiController
         return Ok(product.ToDto());
     }
 
-    [HttpPost, Route("products")]
+    [HttpPost, Route("products"), RequirePermission("inventory")]
     public IHttpActionResult CreateProduct([FromBody] ProductCreateDto dto)
     {
         if (dto == null || string.IsNullOrWhiteSpace(dto.Sku) || string.IsNullOrWhiteSpace(dto.Name))
@@ -147,7 +148,7 @@ public class ErpController : ApiController
         return Ok(p.ToDto());
     }
 
-    [HttpPut, Route("products/{id:int}")]
+    [HttpPut, Route("products/{id:int}"), RequirePermission("inventory")]
     public IHttpActionResult UpdateProduct(int id, [FromBody] ProductCreateDto dto)
     {
         if (dto == null || string.IsNullOrWhiteSpace(dto.Sku) || string.IsNullOrWhiteSpace(dto.Name))
@@ -186,7 +187,7 @@ public class ErpController : ApiController
         return Ok(p.ToDto());
     }
 
-    [HttpDelete, Route("products/{id:int}")]
+    [HttpDelete, Route("products/{id:int}"), RequirePermission("inventory")]
     public IHttpActionResult DeleteProduct(int id)
     {
         using var db = Db.Create();
@@ -198,9 +199,10 @@ public class ErpController : ApiController
         return Ok(new { deleted = true });
     }
 
-    [HttpPost, Route("products/{id:int}/adjust")]
+    [HttpPost, Route("products/{id:int}/adjust"), RequirePermission("inventory")]
     public IHttpActionResult Adjust(int id, [FromBody] StockAdjustDto dto)
     {
+        if (dto == null) return BadRequest("Body required");
         using var db = Db.Create();
         var p = db.Products.Find(id);
         if (p is null || !p.IsActive) return NotFound();
@@ -244,6 +246,8 @@ public class ErpController : ApiController
         var po = LoadPo(db, dto.PurchaseOrderId);
         if (po is null) return BadRequest("Purchase order not found");
         if (po.Status == "received" || po.Status == "cancelled") return BadRequest("Cannot receive this PO");
+        if (!po.IsApproved || po.Status == "pending_approval")
+            return BadRequest("PO must be approved before receiving");
 
         var line = po.Lines.FirstOrDefault(l => l.ProductId == product.Id);
         if (line is null) return BadRequest($"UPC/SKU not on PO {po.PoNumber}");
@@ -371,7 +375,7 @@ public class ErpController : ApiController
         return Ok(list.Select(p => p.ToDto()).ToList());
     }
 
-    [HttpPost, Route("purchase-orders")]
+    [HttpPost, Route("purchase-orders"), RequirePermission("purchasing")]
     public IHttpActionResult CreatePo([FromBody] PurchaseOrderCreateDto dto)
     {
         if (dto == null || dto.Lines == null || dto.Lines.Count == 0) return BadRequest("At least one line is required");
@@ -430,7 +434,16 @@ public class ErpController : ApiController
         po.ExpectedDate = dto.ExpectedDate;
         po.Notes = dto.Notes;
         if (!string.IsNullOrWhiteSpace(dto.Status))
-            po.Status = dto.Status.Trim().ToLowerInvariant();
+        {
+            var status = dto.Status.Trim().ToLowerInvariant();
+            if (status is "received" or "partial")
+                return BadRequest("Use the receive endpoint to receive stock");
+            if (po.Status == "pending_approval" && status is not ("pending_approval" or "cancelled" or "draft"))
+                return BadRequest("PO requires approval before changing status");
+            if (status == "ordered" && !po.IsApproved)
+                return BadRequest("PO must be approved before marking ordered");
+            po.Status = status;
+        }
 
         if (dto.Lines != null)
         {
@@ -479,10 +492,13 @@ public class ErpController : ApiController
     [HttpPost, Route("purchase-orders/{id:int}/receive")]
     public IHttpActionResult ReceivePo(int id, [FromBody] ReceivePurchaseOrderDto dto)
     {
+        if (dto?.Lines == null || dto.Lines.Count == 0) return BadRequest("Receive lines required");
         using var db = Db.Create();
         var po = LoadPo(db, id);
         if (po is null) return NotFound();
         if (po.Status == "received" || po.Status == "cancelled") return BadRequest("Cannot receive this PO");
+        if (!po.IsApproved || po.Status == "pending_approval")
+            return BadRequest("PO must be approved before receiving");
 
         foreach (var item in dto.Lines)
         {
@@ -518,7 +534,7 @@ public class ErpController : ApiController
         return Ok(list.Select(s => s.ToDto()).ToList());
     }
 
-    [HttpPost, Route("sales-orders")]
+    [HttpPost, Route("sales-orders"), RequirePermission("sales")]
     public IHttpActionResult CreateSo([FromBody] SalesOrderCreateDto dto)
     {
         if (dto == null || dto.Lines == null || dto.Lines.Count == 0) return BadRequest("At least one line is required");
@@ -550,7 +566,10 @@ public class ErpController : ApiController
             var product = db.Products.Include(p => p.TaxCode).FirstOrDefault(p => p.Id == line.ProductId);
             if (product is null || !product.IsActive) return BadRequest($"Product {line.ProductId} not found");
             if (!isQuote && product.QuantityOnHand < line.Quantity)
-                return BadRequest($"Insufficient stock for {product.Sku}");
+                return BadRequest(
+                    $"Insufficient stock for {product.Sku} ({product.Name}). " +
+                    $"Requested {line.Quantity}, available {product.QuantityOnHand}. " +
+                    "Receive a PO or adjust inventory first, or save as a Quote.");
             var price = line.UnitPrice
                         ?? customer.PriceList?.Items.FirstOrDefault(i => i.ProductId == product.Id)?.UnitPrice
                         ?? product.SellPrice;
@@ -624,15 +643,29 @@ public class ErpController : ApiController
 
         so.CustomerId = dto.CustomerId;
         so.Notes = dto.Notes;
-        if (!string.IsNullOrWhiteSpace(dto.Status))
-            so.Status = dto.Status.Trim().ToLowerInvariant();
         if (dto.TaxRate.HasValue) so.TaxRate = dto.TaxRate.Value;
 
+        var wasInventory = AffectsInventory(so);
+        if (!string.IsNullOrWhiteSpace(dto.Status))
+        {
+            var newStatus = dto.Status.Trim().ToLowerInvariant();
+            if (newStatus == "cancelled" && so.Status != "cancelled" && wasInventory && dto.Lines == null)
+            {
+                foreach (var old in so.Lines)
+                    InventoryService.ApplyDelta(db, old.Product, old.Quantity, "sale-void", "sales-order", so.Id, so.OrderNumber);
+            }
+            so.Status = newStatus;
+        }
+
+        var affectsInventory = AffectsInventory(so);
         if (dto.Lines != null)
         {
             if (dto.Lines.Count == 0) return BadRequest("At least one line is required");
-            foreach (var old in so.Lines)
-                InventoryService.ApplyDelta(db, old.Product, old.Quantity, "sale-void", "sales-order", so.Id, so.OrderNumber);
+            if (wasInventory)
+            {
+                foreach (var old in so.Lines)
+                    InventoryService.ApplyDelta(db, old.Product, old.Quantity, "sale-void", "sales-order", so.Id, so.OrderNumber);
+            }
             db.SalesOrderLines.RemoveRange(so.Lines);
             so.Lines.Clear();
             decimal subtotal = 0;
@@ -640,17 +673,20 @@ public class ErpController : ApiController
             {
                 var product = db.Products.Find(line.ProductId);
                 if (product is null || !product.IsActive) return BadRequest($"Product {line.ProductId} not found");
-                if (product.QuantityOnHand < line.Quantity)
-                    return BadRequest($"Insufficient stock for {product.Sku}");
+                if (affectsInventory && product.QuantityOnHand < line.Quantity)
+                    return BadRequest(
+                        $"Insufficient stock for {product.Sku} ({product.Name}). " +
+                        $"Requested {line.Quantity}, available {product.QuantityOnHand}.");
                 var price = line.UnitPrice ?? product.SellPrice;
                 so.Lines.Add(new SalesOrderLine { ProductId = product.Id, Quantity = line.Quantity, UnitPrice = price });
-                InventoryService.ApplyDelta(db, product, -line.Quantity, "sale", "sales-order", so.Id, so.OrderNumber);
+                if (affectsInventory)
+                    InventoryService.ApplyDelta(db, product, -line.Quantity, "sale", "sales-order", so.Id, so.OrderNumber);
                 subtotal += line.Quantity * price;
             }
             so.Subtotal = subtotal;
             so.TaxAmount = Math.Round(subtotal * (so.TaxRate / 100m), 2);
             so.Total = so.Subtotal + so.TaxAmount;
-            if (so.Status != "cancelled") so.Status = "fulfilled";
+            if (so.Status != "cancelled" && so.DocumentType != "quote") so.Status = "fulfilled";
         }
         else
         {
@@ -672,7 +708,7 @@ public class ErpController : ApiController
         var so = db.SalesOrders.Include(s => s.Lines).ThenInclude(l => l.Product)
             .FirstOrDefault(s => s.Id == id);
         if (so is null) return NotFound();
-        if (so.Status != "cancelled")
+        if (AffectsInventory(so))
         {
             foreach (var line in so.Lines)
                 InventoryService.ApplyDelta(db, line.Product, line.Quantity, "sale-void", "sales-order", so.Id, so.OrderNumber);
@@ -683,6 +719,10 @@ public class ErpController : ApiController
         ReminderScanner.Scan(db);
         return Ok(new { deleted = true });
     }
+
+    private static bool AffectsInventory(SalesOrder so) =>
+        !string.Equals(so.DocumentType, "quote", StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(so.Status, "cancelled", StringComparison.OrdinalIgnoreCase);
 
     [HttpGet, Route("reminders")]
     public IHttpActionResult Reminders(bool unresolvedOnly = true)
@@ -737,7 +777,7 @@ public class ErpController : ApiController
         return Ok(new { deleted = true });
     }
 
-    [HttpPost, Route("reminders/run")]
+    [HttpPost, Route("reminders/run"), RequirePermission("reminders")]
     public IHttpActionResult RunReminders()
     {
         using var db = Db.Create();

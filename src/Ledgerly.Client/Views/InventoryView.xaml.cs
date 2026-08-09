@@ -31,7 +31,8 @@ public partial class InventoryView : UserControl
     {
         _lowOnly = !_lowOnly;
         ToggleLowBtn.Content = _lowOnly ? "Show all" : "Show low stock";
-        await LoadAsync();
+        try { await LoadAsync(); }
+        catch (Exception ex) { EntityDialogs.ShowError(ex); }
     }
 
     private async void SearchBox_KeyDown(object sender, KeyEventArgs e)
@@ -39,7 +40,8 @@ public partial class InventoryView : UserControl
         if (e.Key == Key.Enter)
         {
             e.Handled = true;
-            await LoadAsync();
+            try { await LoadAsync(); }
+            catch (Exception ex) { EntityDialogs.ShowError(ex); }
         }
     }
 

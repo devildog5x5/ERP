@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using Ledgerly.Server.Data;
 using Microsoft.Owin.Hosting;
 
@@ -26,30 +27,78 @@ internal static class Program
 
     private static int RunServer()
     {
-        var config = ServerConfig.LoadOrCreate();
-        Db.Configure(config);
-
-        if (Db.Provider == DatabaseProvider.Sqlite)
-            SQLitePCL.Batteries_V2.Init();
-
-        DbSeeder.Seed();
-
-        Console.WriteLine("Ledgerly API server (C# / .NET Framework 4.8)");
-        Console.WriteLine("Compatible with Windows 7 SP1 and later");
-        Console.WriteLine($"Provider : {Db.Provider}");
-        Console.WriteLine($"Database : {config.Describe()}");
-        Console.WriteLine($"Config   : {ServerConfig.ConfigPath}");
-        Console.WriteLine($"Listening on {Db.ListenUrl}");
-        Console.WriteLine("Press Enter to stop.");
-        Console.WriteLine();
-        Console.WriteLine("Grow later with:");
-        Console.WriteLine("  Ledgerly.Server.exe migrate --connection \"Server=.;Database=Ledgerly;Trusted_Connection=True;\"");
-
-        using (WebApp.Start<Startup>(Db.ListenUrl))
+        try
         {
-            Console.ReadLine();
+            var config = ServerConfig.LoadOrCreate();
+            Db.Configure(config);
+
+            if (Db.Provider == DatabaseProvider.Sqlite)
+                SQLitePCL.Batteries_V2.Init();
+
+            DbSeeder.Seed();
+
+            Console.WriteLine("Ledgerly API server (C# / .NET Framework 4.8)");
+            Console.WriteLine("Compatible with Windows 7 SP1 and later");
+            Console.WriteLine($"Provider : {Db.Provider}");
+            Console.WriteLine($"Database : {config.Describe()}");
+            Console.WriteLine($"Config   : {ServerConfig.ConfigPath}");
+            Console.WriteLine($"Listening on {Db.ListenUrl}");
+            Console.WriteLine("Press Ctrl+C to stop" +
+                              (CanReadConsoleInput() ? ", or Enter." : "."));
+            Console.WriteLine();
+            Console.WriteLine("Grow later with:");
+            Console.WriteLine("  Ledgerly.Server.exe migrate --connection \"Server=.;Database=Ledgerly;Trusted_Connection=True;\"");
+
+            using (WebApp.Start<Startup>(Db.ListenUrl))
+            {
+                WaitForShutdown();
+            }
+            return 0;
         }
-        return 0;
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("Server failed to start:");
+            Console.Error.WriteLine(ex.Message);
+            if (ex.InnerException != null)
+                Console.Error.WriteLine(ex.InnerException.Message);
+            return 1;
+        }
+    }
+
+    private static bool CanReadConsoleInput()
+    {
+        try
+        {
+            return Environment.UserInteractive && !Console.IsInputRedirected;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void WaitForShutdown()
+    {
+        using var exit = new ManualResetEvent(false);
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            exit.Set();
+        };
+
+        // Only wait on Enter when a real console is attached. Redirected/closed
+        // stdin makes ReadLine return immediately and would stop the host.
+        if (CanReadConsoleInput())
+        {
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try { Console.ReadLine(); }
+                catch { /* ignore */ }
+                exit.Set();
+            });
+        }
+
+        exit.WaitOne();
     }
 
     private static int RunMigrate(string[] args)

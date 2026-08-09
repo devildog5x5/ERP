@@ -27,6 +27,15 @@ public static class DbSeeder
             }
             foreach (var p in db.Products.AsEnumerable().Where(x => x.AverageCost == 0 && x.UnitCost > 0).ToList())
                 p.AverageCost = p.UnitCost;
+
+            // Demo syrup was seeded at 0 — restock so sales orders can include it while still low.
+            var syrup = db.Products.FirstOrDefault(p => p.Sku == "SYR-VAN");
+            if (syrup != null && syrup.QuantityOnHand <= 0)
+            {
+                InventoryService.ApplyDelta(db, syrup, 3, "seed-restock",
+                    notes: "Demo restock so SYR-VAN is sellable");
+            }
+
             SyncProductLocations(db);
             db.SaveChanges();
             ReminderScanner.Scan(db);
@@ -53,7 +62,8 @@ public static class DbSeeder
             new Product { Sku = "COF-BEAN-1KG", Upc = "00012345678905", Name = "Coffee Beans 1kg", Category = "Grocery", Unit = "bag", QuantityOnHand = 4, ReorderPoint = 12, ReorderQuantity = 24, UnitCost = 8.50m, AverageCost = 8.50m, SellPrice = 14m, SupplierId = suppliers[0].Id, TaxCodeId = tax.Id },
             new Product { Sku = "CUP-12OZ", Upc = "00012345678912", Name = "Paper Cups 12oz (50pk)", Category = "Packaging", Unit = "pack", QuantityOnHand = 2, ReorderPoint = 10, ReorderQuantity = 20, UnitCost = 3.25m, AverageCost = 3.25m, SellPrice = 6.50m, SupplierId = suppliers[1].Id, TaxCodeId = tax.Id },
             new Product { Sku = "NAP-WHT", Upc = "00012345678929", Name = "White Napkins", Category = "Packaging", Unit = "pack", QuantityOnHand = 40, ReorderPoint = 15, ReorderQuantity = 30, UnitCost = 1.10m, AverageCost = 1.10m, SellPrice = 2.50m, SupplierId = suppliers[1].Id, TaxCodeId = tax.Id },
-            new Product { Sku = "SYR-VAN", Upc = "00012345678936", Name = "Vanilla Syrup", Category = "Grocery", Unit = "bottle", QuantityOnHand = 0, ReorderPoint = 6, ReorderQuantity = 12, UnitCost = 4.75m, AverageCost = 4.75m, SellPrice = 9m, SupplierId = suppliers[0].Id, TaxCodeId = tax.Id },
+            // Keep below reorder point for reminders, but sellable for demo sales orders.
+            new Product { Sku = "SYR-VAN", Upc = "00012345678936", Name = "Vanilla Syrup", Category = "Grocery", Unit = "bottle", QuantityOnHand = 3, ReorderPoint = 6, ReorderQuantity = 12, UnitCost = 4.75m, AverageCost = 4.75m, SellPrice = 9m, SupplierId = suppliers[0].Id, TaxCodeId = tax.Id },
             new Product { Sku = "FLT-PAPER", Upc = "00012345678943", Name = "Coffee Filters", Category = "Consumables", Unit = "box", QuantityOnHand = 18, ReorderPoint = 8, ReorderQuantity = 16, UnitCost = 2m, AverageCost = 2m, SellPrice = 4.25m, SupplierId = suppliers[0].Id, TaxCodeId = tax.Id },
         };
         db.Products.AddRange(products);
@@ -110,6 +120,26 @@ public static class DbSeeder
                 new Role { Name = "Clerk", Permissions = "dashboard,inventory,sales,partners,scan,print" },
                 new Role { Name = "Warehouse", Permissions = "dashboard,inventory,scan,warehouse,locations,purchasing" },
                 new Role { Name = "Accountant", Permissions = "dashboard,finance,reports,sales,purchasing,partners,print,backup" });
+            db.SaveChanges();
+        }
+        else
+        {
+            // User administration must stay Administrator-only — strip "users" from other roles.
+            foreach (var role in db.Roles.Where(r => r.Name != "Administrator").ToList())
+            {
+                var parts = (role.Permissions ?? "")
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Trim())
+                    .Where(p => p.Length > 0 && !p.Equals("users", StringComparison.OrdinalIgnoreCase)
+                                             && !p.Equals("admin", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                var cleaned = string.Join(",", parts);
+                if (!string.Equals(cleaned, role.Permissions, StringComparison.Ordinal))
+                    role.Permissions = cleaned;
+            }
+            var adminRole = db.Roles.FirstOrDefault(r => r.Name == "Administrator");
+            if (adminRole != null && !string.Equals(adminRole.Permissions, AllPermissions, StringComparison.Ordinal))
+                adminRole.Permissions = AllPermissions;
             db.SaveChanges();
         }
 

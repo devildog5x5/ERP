@@ -211,7 +211,13 @@ public static class EntityDialogs
         }
 
         var customer = Combo(customers.Select(c => new ComboItem(c.Id, c.Name)).ToList(), existing?.CustomerId ?? customers[0].Id);
-        var notes = Field("", multiline: true);
+        var docType = Combo(new List<ComboItem>
+        {
+            new ComboItem(0, "order — deducts inventory"),
+            new ComboItem(1, "quote — no stock deduction")
+        }, string.Equals(existing?.DocumentType, "quote", StringComparison.OrdinalIgnoreCase) ? 1 : 0);
+        var notes = Field(existing?.Notes ?? "", multiline: true);
+        notes.MinHeight = 72;
         var lines = new List<LineDraft>();
         if (existing != null)
         {
@@ -219,11 +225,14 @@ public static class EntityDialogs
                 lines.Add(new LineDraft(l.ProductId, l.Quantity, l.UnitPrice, LabelFor(products, l.ProductId)));
         }
 
-        var linesBox = new ListBox { Height = 120, Margin = new Thickness(0, 0, 0, 8) };
+        var linesBox = new ListBox { Height = 160, Margin = new Thickness(0, 0, 0, 8), MinWidth = 480 };
         void RefreshLines() => linesBox.ItemsSource = lines.Select(l => l.Display).ToList();
         RefreshLines();
 
-        var product = Combo(products.Select(p => new ComboItem(p.Id, $"{p.Sku} — {p.Name} (avail {p.QuantityOnHand})")).ToList(), products[0].Id);
+        bool IsQuote() => (SelectedId(docType) ?? 0) == 1;
+
+        var product = Combo(products.Select(p => new ComboItem(p.Id,
+            $"{p.Sku} — {p.Name} (avail {p.QuantityOnHand:0.##})")).ToList(), products[0].Id);
         var qty = Field("1");
         var addLine = new Button { Content = "Add line", Style = (Style)Application.Current.FindResource("SecondaryButton"), Margin = new Thickness(8, 0, 0, 0) };
         addLine.Click += (_, _) =>
@@ -232,7 +241,16 @@ public static class EntityDialogs
             var q = Dec(qty.Text);
             if (pid <= 0 || q <= 0) return;
             var p = products.First(x => x.Id == pid);
-            lines.Add(new LineDraft(pid, q, p.SellPrice, $"{p.Sku} — {p.Name}"));
+            var already = lines.Where(l => l.ProductId == pid).Sum(l => l.Quantity);
+            if (!IsQuote() && already + q > p.QuantityOnHand)
+            {
+                MessageBox.Show(
+                    $"Insufficient stock for {p.Sku}.\nRequested {already + q}, available {p.QuantityOnHand}.\n\n" +
+                    "Lower the qty, receive stock first, or switch Document type to Quote.",
+                    "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            lines.Add(new LineDraft(pid, q, p.SellPrice, $"{p.Sku} — {p.Name} × {q:0.##}"));
             RefreshLines();
         };
         var removeLine = new Button { Content = "Remove selected", Style = (Style)Application.Current.FindResource("SecondaryButton"), Margin = new Thickness(8, 0, 0, 0) };
@@ -253,6 +271,7 @@ public static class EntityDialogs
         var rows = new List<UIElement>
         {
             Row("Customer", customer),
+            Row("Document type", docType),
             Row("Notes", notes),
             new TextBlock { Text = "Lines", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 4) },
             lineTools,
@@ -260,7 +279,7 @@ public static class EntityDialogs
             linesBox
         };
 
-        if (!Show(owner, existing is null ? "Add sales order" : "Edit sales order", 520, rows))
+        if (!Show(owner, existing is null ? "Add sales order" : "Edit sales order", 580, rows, canResize: true))
             return null;
 
         if (lines.Count == 0)
@@ -269,9 +288,27 @@ public static class EntityDialogs
             return null;
         }
 
+        var asQuote = IsQuote();
+        if (!asQuote)
+        {
+            foreach (var group in lines.GroupBy(l => l.ProductId))
+            {
+                var p = products.First(x => x.Id == group.Key);
+                var totalQty = group.Sum(l => l.Quantity);
+                if (totalQty > p.QuantityOnHand)
+                {
+                    MessageBox.Show(
+                        $"Insufficient stock for {p.Sku}.\nRequested {totalQty}, available {p.QuantityOnHand}.",
+                        "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+            }
+        }
+
         return new SalesOrderCreateDto
         {
             CustomerId = SelectedId(customer) ?? 0,
+            DocumentType = asQuote ? "quote" : "order",
             Notes = NullIfEmpty(notes.Text),
             Lines = lines.Select(l => new SalesOrderLineCreateDto
             {
@@ -326,6 +363,9 @@ public static class EntityDialogs
         MessageBox.Show(owner, $"Delete {label}?\nThis cannot be undone.", "Confirm delete",
             MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
 
+    public static bool Confirm(Window owner, string title, string message) =>
+        MessageBox.Show(owner, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+
     public static decimal? PromptDecimal(Window owner, string title, string message, string defaultValue = "1")
     {
         var box = Field(defaultValue);
@@ -341,22 +381,105 @@ public static class EntityDialogs
         return box.Text.Trim();
     }
 
-    public static void ShowError(Exception ex) =>
-        MessageBox.Show(ex.Message, "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+    public static UserCreateDto? EditUser(Window owner, IList<RoleDto> roles)
+    {
+        if (roles.Count == 0)
+        {
+            MessageBox.Show("No roles are defined.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+
+        var userName = Field("");
+        var displayName = Field("");
+        var password = Field("changeme");
+        var roleItems = roles
+            .Select(r => new ComboItem(r.Id, $"{r.Name}  ·  {SummarizePermissions(r.Permissions)}"))
+            .ToList();
+        var role = Combo(roleItems, roles[0].Id);
+        role.ToolTip = "Role permissions control which screens and actions this user can access.";
+
+        if (!Show(owner, "Add user", 480,
+                Row("Username", userName),
+                Row("Display name", displayName),
+                Row("Password", password),
+                Row("Role (element access)", role)))
+            return null;
+
+        if (string.IsNullOrWhiteSpace(userName.Text) || string.IsNullOrWhiteSpace(password.Text))
+        {
+            MessageBox.Show("Username and password are required.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+
+        var roleId = SelectedId(role) ?? roles[0].Id;
+        return new UserCreateDto
+        {
+            UserName = userName.Text.Trim(),
+            DisplayName = string.IsNullOrWhiteSpace(displayName.Text) ? userName.Text.Trim() : displayName.Text.Trim(),
+            Password = password.Text,
+            RoleId = roleId
+        };
+    }
+
+    private static string SummarizePermissions(string? permissions)
+    {
+        if (string.IsNullOrWhiteSpace(permissions)) return "no permissions";
+        var parts = permissions.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
+        if (parts.Count == 0) return "no permissions";
+        if (parts.Count <= 4) return string.Join(", ", parts);
+        return string.Join(", ", parts.Take(4)) + $", +{parts.Count - 4} more";
+    }
+
+    public static void ShowError(Exception ex)
+    {
+        if (ex is UnauthorizedAccessException)
+        {
+            App.PromptRelogin(ex.Message);
+            return;
+        }
+        MessageBox.Show(CleanError(ex.Message), "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
+    private static string CleanError(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message)) return "Unexpected error.";
+        var text = message.Trim();
+        // Strip typical Web API wrappers: 400 Bad Request: "..."
+        var colon = text.IndexOf(':');
+        if (colon > 0 && text.Length > colon + 1 &&
+            (text.StartsWith("400", StringComparison.Ordinal) ||
+             text.StartsWith("403", StringComparison.Ordinal) ||
+             text.StartsWith("404", StringComparison.Ordinal) ||
+             text.StartsWith("500", StringComparison.Ordinal)))
+            text = text.Substring(colon + 1).Trim();
+        text = text.Trim().Trim('"');
+        if (text.StartsWith("{\"message\":", StringComparison.OrdinalIgnoreCase) ||
+            text.StartsWith("{\"Message\":", StringComparison.OrdinalIgnoreCase))
+        {
+            var start = text.IndexOf(':');
+            var end = text.LastIndexOf('"');
+            if (start > 0 && end > start + 2)
+                text = text.Substring(start + 1, end - start - 1).Trim().Trim('"');
+        }
+        return text;
+    }
 
     private static bool Show(Window owner, string title, double width, params UIElement[] rows) =>
-        Show(owner, title, width, (IEnumerable<UIElement>)rows);
+        Show(owner, title, width, (IEnumerable<UIElement>)rows, canResize: false);
 
-    private static bool Show(Window owner, string title, double width, IEnumerable<UIElement> rows)
+    private static bool Show(Window owner, string title, double width, IEnumerable<UIElement> rows, bool canResize = false)
     {
         var dialog = new Window
         {
             Title = title,
             Owner = owner,
             Width = width,
-            SizeToContent = SizeToContent.Height,
+            MinWidth = Math.Min(width, 420),
+            SizeToContent = canResize ? SizeToContent.Manual : SizeToContent.Height,
+            Height = canResize ? 560 : double.NaN,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            ResizeMode = ResizeMode.NoResize,
+            ResizeMode = canResize ? ResizeMode.CanResizeWithGrip : ResizeMode.NoResize,
             Background = Brushes.White
         };
 
@@ -390,7 +513,14 @@ public static class EntityDialogs
         buttons.Children.Add(ok);
         buttons.Children.Add(cancel);
         panel.Children.Add(buttons);
-        dialog.Content = panel;
+        dialog.Content = canResize
+            ? new ScrollViewer
+            {
+                Content = panel,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+            }
+            : panel;
         return dialog.ShowDialog() == true;
     }
 

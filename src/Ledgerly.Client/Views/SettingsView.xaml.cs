@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Ledgerly.Client.Dialogs;
+using Ledgerly.Client.Services;
 using Ledgerly.Shared;
 
 namespace Ledgerly.Client.Views;
@@ -70,10 +71,14 @@ public partial class SettingsView : UserControl
     {
         try
         {
-            App.Config.ApiBaseUrl = ApiUrlBox.Text.Trim();
-            if (!App.Config.ApiBaseUrl.EndsWith("/")) App.Config.ApiBaseUrl += "/";
-            App.Config.Save();
-            App.Api.SetBaseAddress(App.Config.ApiBaseUrl);
+            var apiUrl = ApiClient.NormalizeBaseAddress(ApiUrlBox.Text);
+            ApiUrlBox.Text = apiUrl;
+            if (!string.Equals(App.Config.ApiBaseUrl, apiUrl, StringComparison.OrdinalIgnoreCase))
+            {
+                App.Config.ApiBaseUrl = apiUrl;
+                App.Config.Save();
+                App.Api.SetBaseAddress(apiUrl);
+            }
 
             if (!decimal.TryParse(TaxRateBox.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out var tax)
                 && !decimal.TryParse(TaxRateBox.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out tax))
@@ -104,12 +109,11 @@ public partial class SettingsView : UserControl
     {
         try
         {
-            App.Api.SetBaseAddress(ApiUrlBox.Text.Trim().EndsWith("/") ? ApiUrlBox.Text.Trim() : ApiUrlBox.Text.Trim() + "/");
-            var health = await App.Api.GetHealthAsync();
+            var url = ApiUrlBox.Text.Trim();
+            var health = await ApiClient.ProbeHealthAsync(url);
             StatusText.Text = health is null
                 ? "No response."
                 : $"Connected: {health.App} · {health.DatabaseProvider}";
-            await RefreshPlatformAsync();
         }
         catch (Exception ex) { StatusText.Text = "Connection failed: " + ex.Message; }
     }

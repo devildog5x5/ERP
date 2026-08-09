@@ -16,18 +16,49 @@ public sealed class AuthFilter : ActionFilterAttribute
 
         using var db = Db.Create();
         var settings = db.Settings.FirstOrDefault();
-        if (settings != null && !settings.RequireLogin)
-            return;
+        var requireLogin = settings == null || settings.RequireLogin;
 
         var user = RequestAuth.GetUser(actionContext.Request);
-        if (user is null)
+        var required = actionContext.ActionDescriptor.GetCustomAttributes<RequirePermissionAttribute>()
+            .Concat(actionContext.ActionDescriptor.ControllerDescriptor
+                .GetCustomAttributes<RequirePermissionAttribute>())
+            .Select(a => a.Permission)
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Distinct()
+            .ToList();
+
+        if (required.Count > 0)
         {
-            actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized,
-                "Login required. POST /api/auth/login with userName/password (default admin / admin).");
-            return;
+            if (user is null)
+            {
+                actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized,
+                    "Login required.");
+                return;
+            }
+
+            foreach (var perm in required)
+            {
+                if (!RequestAuth.HasPermission(user, perm))
+                {
+                    actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Forbidden,
+                        $"Missing permission: {perm}");
+                    return;
+                }
+            }
+        }
+        else if (requireLogin)
+        {
+            if (user is null)
+            {
+                actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized,
+                    "Login required. POST /api/auth/login with userName and password.");
+                return;
+            }
         }
 
-        actionContext.Request.Properties["LedgerlyUser"] = user;
+        if (user != null)
+            actionContext.Request.Properties["LedgerlyUser"] = user;
+
         base.OnActionExecuting(actionContext);
     }
 }

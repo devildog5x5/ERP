@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,6 +12,7 @@ namespace Ledgerly.Client;
 public partial class MainWindow : Window
 {
     private string _page = "dashboard";
+    private int _navGeneration;
 
     public MainWindow()
     {
@@ -18,10 +20,58 @@ public partial class MainWindow : Window
         InitializeComponent();
         Loaded += async (_, _) =>
         {
+            ApplyAccess();
             UserStatus.Text = $"{Session.DisplayName} · {Session.Role}";
             await RefreshConnectionAsync();
-            await NavigateAsync("dashboard");
+            var start = Session.Can("dashboard") ? "dashboard"
+                : FirstAllowedPage() ?? "dashboard";
+            await NavigateAsync(start);
         };
+    }
+
+    public void ApplyAccess()
+    {
+        Access.ApplyTree(this);
+
+        // Security: change password for everyone; users/access for Administrators only.
+        NavPasswordBtn.Visibility = Visibility.Visible;
+        NavPasswordBtn.IsEnabled = true;
+        NavUsersBtn.Visibility = Session.IsAdministrator ? Visibility.Visible : Visibility.Collapsed;
+        NavUsersBtn.IsEnabled = Session.IsAdministrator;
+        // Header stays visible whenever Change password (always) or Users is shown.
+        NavSecurityHeader.Visibility = Visibility.Visible;
+
+        UpdateSectionHeaders();
+    }
+
+    private void UpdateSectionHeaders()
+    {
+        SetHeaderVisible(NavOverviewHeader, "dashboard", "scan", "reports", "reminders");
+        SetHeaderVisible(NavOperationsHeader, "inventory", "warehouse", "purchasing", "sales");
+        SetHeaderVisible(NavDirectoryHeader, "partners");
+        SetHeaderVisible(NavFinanceHeader, "finance");
+        SetHeaderVisible(NavSystemHeader, "integrations", "settings");
+        // SECURITY always has at least "Change password".
+        NavSecurityHeader.Visibility = Visibility.Visible;
+    }
+
+    private static void SetHeaderVisible(UIElement header, params string[] permissions)
+    {
+        header.Visibility = permissions.Any(Session.Can) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private static string? FirstAllowedPage()
+    {
+        foreach (var page in new[]
+                 {
+                     "dashboard", "scan", "inventory", "sales", "purchasing", "warehouse",
+                     "partners", "reminders", "reports", "finance", "users", "integrations", "settings"
+                 })
+        {
+            if (Session.Can(Access.PermissionForPage(page == "partners" ? "suppliers" : page)))
+                return page == "partners" ? "suppliers" : page;
+        }
+        return null;
     }
 
     private async void Nav_Click(object sender, RoutedEventArgs e)
@@ -34,6 +84,7 @@ public partial class MainWindow : Window
 
     private async void SecondaryAction_Click(object sender, RoutedEventArgs e)
     {
+        if (!Access.Ensure("reminders", "run reminder scans")) return;
         try
         {
             await App.Api.RunRemindersAsync();
@@ -48,72 +99,125 @@ public partial class MainWindow : Window
 
     private async Task NavigateAsync(string page)
     {
+        var required = Access.PermissionForPage(page);
+        if (!string.IsNullOrEmpty(required) && !Session.Can(required))
+        {
+            ContentHost.Content = new TextBlock
+            {
+                Text = $"Access denied.\n\nYour role ({Session.Role}) does not include \"{required}\".",
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = (Brush)FindResource("MutedBrush"),
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(24)
+            };
+            return;
+        }
+
+        var gen = ++_navGeneration;
         _page = page;
         try
         {
+            object? content = null;
             switch (page)
             {
                 case "dashboard":
                     SetHeader("OVERVIEW", "Operations dashboard", "Monitor stock health, open buying, and critical reminders.");
-                    ContentHost.Content = await DashboardView.CreateAsync();
+                    content = await DashboardView.CreateAsync();
                     break;
                 case "scan":
                     SetHeader("OVERVIEW", "Scan station", "Scan UPC/SKU to look up, adjust stock, receive POs, or ring up a quick sale.");
-                    ContentHost.Content = await ScanStationView.CreateAsync();
+                    content = await ScanStationView.CreateAsync();
                     break;
                 case "reports":
                     SetHeader("OVERVIEW", "Reports", "Margins, AR/AP aging, dead stock, and operational KPIs.");
-                    ContentHost.Content = await ReportsView.CreateAsync();
+                    content = await ReportsView.CreateAsync();
                     break;
                 case "inventory":
                     SetHeader("OPERATIONS", "Inventory", "Track quantities, UPC barcodes, reorder points, and suggested buy amounts.");
-                    ContentHost.Content = await InventoryView.CreateAsync();
+                    content = await InventoryView.CreateAsync();
                     break;
                 case "warehouse":
                     SetHeader("OPERATIONS", "Warehouse", "Locations, transfers, cycle counts, and kit builds.");
-                    ContentHost.Content = await WarehouseView.CreateAsync();
+                    content = await WarehouseView.CreateAsync();
                     break;
                 case "purchasing":
                     SetHeader("OPERATIONS", "Purchasing", "Buy stock, track deliveries, and receive quantities.");
-                    ContentHost.Content = await PurchaseOrdersView.CreateAsync();
+                    content = await PurchaseOrdersView.CreateAsync();
                     break;
                 case "sales":
                     SetHeader("OPERATIONS", "Sales", "Fulfill customer orders and reduce inventory.");
-                    ContentHost.Content = await SalesOrdersView.CreateAsync();
+                    content = await SalesOrdersView.CreateAsync();
                     break;
                 case "suppliers":
                     SetHeader("DIRECTORY", "Suppliers", "Vendor contacts for purchase orders.");
-                    ContentHost.Content = await PartnersView.CreateAsync(suppliers: true);
+                    content = await PartnersView.CreateAsync(suppliers: true);
                     break;
                 case "customers":
                     SetHeader("DIRECTORY", "Customers", "Customer records for sales orders.");
-                    ContentHost.Content = await PartnersView.CreateAsync(suppliers: false);
+                    content = await PartnersView.CreateAsync(suppliers: false);
                     break;
                 case "reminders":
                     SetHeader("OVERVIEW", "Reminders & alerts", "Low stock, suggested buys, and overdue deliveries.");
-                    ContentHost.Content = await RemindersView.CreateAsync();
+                    content = await RemindersView.CreateAsync();
                     break;
                 case "finance":
                     SetHeader("FINANCE", "Finance / GL", "Chart of accounts, journals, bank reconciliation, periods, multi-currency.");
-                    ContentHost.Content = await FinanceView.CreateAsync();
+                    content = await FinanceView.CreateAsync();
                     break;
                 case "users":
-                    SetHeader("SYSTEM", "Users & roles", "Sign-in accounts and permission roles.");
-                    ContentHost.Content = await UsersView.CreateAsync();
+                    if (!Session.IsAdministrator)
+                    {
+                        ContentHost.Content = new TextBlock
+                        {
+                            Text = "Access denied.\n\nOnly an Administrator can manage users and access levels.",
+                            TextWrapping = TextWrapping.Wrap,
+                            Foreground = (Brush)FindResource("MutedBrush"),
+                            VerticalAlignment = VerticalAlignment.Center,
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            Margin = new Thickness(24)
+                        };
+                        return;
+                    }
+                    SetHeader("SECURITY", "Users & access", "Add users, delete accounts, and assign roles that control element access.");
+                    content = await UsersView.CreateAsync();
+                    break;
+                case "password":
+                    SetHeader("SECURITY", "Change password", "Update the password for your signed-in account.");
+                    content = await ChangePasswordView.CreateAsync();
                     break;
                 case "integrations":
                     SetHeader("SYSTEM", "Integrations", "Backups, API keys, webhooks, accounting export, audit log.");
-                    ContentHost.Content = await IntegrationsView.CreateAsync();
+                    content = await IntegrationsView.CreateAsync();
                     break;
                 case "settings":
                     SetHeader("SYSTEM", "Settings", "Company profile, tax, SMTP, and API connection.");
-                    ContentHost.Content = await SettingsView.CreateAsync();
+                    content = await SettingsView.CreateAsync();
                     break;
+            }
+
+            if (gen != _navGeneration) return;
+            if (content != null)
+            {
+                ContentHost.Content = content;
+                if (content is DependencyObject d)
+                    Access.ApplyTree(d);
             }
             await RefreshConnectionAsync();
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            if (gen != _navGeneration) return;
+            if (App.PromptRelogin(ex.Message))
+            {
+                ApplyAccess();
+                UserStatus.Text = $"{Session.DisplayName} · {Session.Role}";
+                await NavigateAsync(page);
+            }
+        }
         catch (Exception ex)
         {
+            if (gen != _navGeneration) return;
             ContentHost.Content = new TextBlock
             {
                 Text = $"Unable to load page.\n\nIs the Ledgerly Server running at {App.Api.BaseAddress}?\n\n{ex.Message}",

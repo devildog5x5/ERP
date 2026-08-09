@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,8 @@ namespace Ledgerly.Client.Services;
 public sealed class ApiClient : IDisposable
 {
     private readonly HttpClient _http;
+    private Uri _baseUri;
+    private string? _authToken;
     private readonly JsonSerializerSettings _json = new()
     {
         NullValueHandling = NullValueHandling.Ignore,
@@ -19,26 +22,54 @@ public sealed class ApiClient : IDisposable
 
     public ApiClient(string baseAddress = "http://127.0.0.1:8000/")
     {
-        _http = new HttpClient { BaseAddress = new Uri(baseAddress), Timeout = TimeSpan.FromSeconds(30) };
+        // Do not set/mutate HttpClient.BaseAddress after the first request —
+        // .NET throws InvalidOperationException. Keep the base URL ourselves.
+        _baseUri = new Uri(NormalizeBaseAddress(baseAddress));
+        _http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
     }
 
-    public string BaseAddress => _http.BaseAddress?.ToString() ?? "";
+    public string BaseAddress => _baseUri.ToString();
 
     public void SetBaseAddress(string baseAddress)
     {
-        _http.BaseAddress = new Uri(baseAddress.EndsWith("/") ? baseAddress : baseAddress + "/");
+        _baseUri = new Uri(NormalizeBaseAddress(baseAddress));
+    }
+
+    public static string NormalizeBaseAddress(string baseAddress)
+    {
+        var url = (baseAddress ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(url))
+            url = "http://127.0.0.1:8000/";
+        if (!url.EndsWith("/")) url += "/";
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            throw new ArgumentException("API base URL must be an absolute http(s) address.", nameof(baseAddress));
+        return uri.ToString();
     }
 
     public void SetAuthToken(string? token)
     {
-        _http.DefaultRequestHeaders.Remove("Authorization");
-        if (!string.IsNullOrWhiteSpace(token))
-            _http.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", "Bearer " + token);
+        _authToken = string.IsNullOrWhiteSpace(token) ? null : token.Trim();
+    }
+
+    private Uri Url(string path) => new Uri(_baseUri, path);
+
+    private HttpRequestMessage Request(HttpMethod method, string path, HttpContent? content = null)
+    {
+        var req = new HttpRequestMessage(method, Url(path)) { Content = content };
+        if (!string.IsNullOrWhiteSpace(_authToken))
+            req.Headers.TryAddWithoutValidation("Authorization", "Bearer " + _authToken);
+        return req;
     }
 
     public Task<LoginResponseDto?> LoginAsync(LoginRequestDto dto) => PostAsync<LoginResponseDto>("api/auth/login", dto);
+    public Task<LoginResponseDto?> ChangePasswordAsync(ChangePasswordDto dto) =>
+        PostAsync<LoginResponseDto>("api/auth/change-password", dto);
     public Task<List<UserDto>?> GetUsersAsync() => GetAsync<List<UserDto>>("api/users");
     public Task<UserDto?> CreateUserAsync(UserCreateDto dto) => PostAsync<UserDto>("api/users", dto);
+    public Task ResetPasswordAsync(int id, ResetPasswordDto dto) =>
+        PostAsync<object>($"api/users/{id}/reset-password", dto);
+    public Task DeleteUserAsync(int id) => DeleteAsync($"api/users/{id}");
     public Task<List<RoleDto>?> GetRolesAsync() => GetAsync<List<RoleDto>>("api/roles");
     public Task<List<AuditLogDto>?> GetAuditLogsAsync() => GetAsync<List<AuditLogDto>>("api/audit-logs");
     public Task<List<LocationDto>?> GetLocationsAsync() => GetAsync<List<LocationDto>>("api/locations");
@@ -82,7 +113,6 @@ public sealed class ApiClient : IDisposable
     public Task<BackupResultDto?> BackupAsync() => PostAsync<BackupResultDto>("api/backup", new { });
     public Task<List<BackupResultDto>?> ListBackupsAsync() => GetAsync<List<BackupResultDto>>("api/backup/list");
     public Task RestoreBackupAsync(string path) => PostAsync<object>("api/backup/restore", new BackupResultDto { Path = path });
-
 
     public Task<HealthDto?> GetHealthAsync() => GetAsync<HealthDto>("api/health");
     public Task<DashboardDto?> GetDashboardAsync() => GetAsync<DashboardDto>("api/dashboard");
@@ -148,53 +178,76 @@ public sealed class ApiClient : IDisposable
 
     public async Task RunRemindersAsync()
     {
-        var res = await _http.PostAsync("api/reminders/run", null).ConfigureAwait(false);
-        await EnsureSuccessAsync(res).ConfigureAwait(false);
+        using var req = Request(HttpMethod.Post, "api/reminders/run");
+        using var res = await _http.SendAsync(req);
+        await EnsureSuccessAsync(res);
     }
 
     public async Task ResolveReminderAsync(int id)
     {
-        var res = await _http.PostAsync($"api/reminders/{id}/resolve", null).ConfigureAwait(false);
-        await EnsureSuccessAsync(res).ConfigureAwait(false);
+        using var req = Request(HttpMethod.Post, $"api/reminders/{id}/resolve");
+        using var res = await _http.SendAsync(req);
+        await EnsureSuccessAsync(res);
+    }
+
+    /// <summary>GET health against an arbitrary base URL without mutating this client.</summary>
+    public static async Task<HealthDto?> ProbeHealthAsync(string baseAddress)
+    {
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        var uri = new Uri(new Uri(NormalizeBaseAddress(baseAddress)), "api/health");
+        using var res = await http.GetAsync(uri);
+        if (!res.IsSuccessStatusCode) return null;
+        var json = await res.Content.ReadAsStringAsync();
+        return JsonConvert.DeserializeObject<HealthDto>(json);
     }
 
     private async Task<T?> GetAsync<T>(string path)
     {
-        var res = await _http.GetAsync(path).ConfigureAwait(false);
-        await EnsureSuccessAsync(res).ConfigureAwait(false);
-        var json = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var req = Request(HttpMethod.Get, path);
+        using var res = await _http.SendAsync(req);
+        await EnsureSuccessAsync(res);
+        var json = await res.Content.ReadAsStringAsync();
         return JsonConvert.DeserializeObject<T>(json, _json);
     }
 
     private async Task<T?> PostAsync<T>(string path, object body)
     {
         var content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
-        var res = await _http.PostAsync(path, content).ConfigureAwait(false);
-        await EnsureSuccessAsync(res).ConfigureAwait(false);
-        var json = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var req = Request(HttpMethod.Post, path, content);
+        using var res = await _http.SendAsync(req);
+        await EnsureSuccessAsync(res);
+        var json = await res.Content.ReadAsStringAsync();
         return JsonConvert.DeserializeObject<T>(json, _json);
     }
 
     private async Task<T?> PutAsync<T>(string path, object body)
     {
         var content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
-        var res = await _http.PutAsync(path, content).ConfigureAwait(false);
-        await EnsureSuccessAsync(res).ConfigureAwait(false);
-        var json = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var req = Request(HttpMethod.Put, path, content);
+        using var res = await _http.SendAsync(req);
+        await EnsureSuccessAsync(res);
+        var json = await res.Content.ReadAsStringAsync();
         return JsonConvert.DeserializeObject<T>(json, _json);
     }
 
     private async Task DeleteAsync(string path)
     {
-        var res = await _http.DeleteAsync(path).ConfigureAwait(false);
-        await EnsureSuccessAsync(res).ConfigureAwait(false);
+        using var req = Request(HttpMethod.Delete, path);
+        using var res = await _http.SendAsync(req);
+        await EnsureSuccessAsync(res);
     }
 
-    private static async Task EnsureSuccessAsync(HttpResponseMessage res)
+    private async Task EnsureSuccessAsync(HttpResponseMessage res)
     {
         if (res.IsSuccessStatusCode) return;
-        var body = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var body = await res.Content.ReadAsStringAsync();
         var detail = string.IsNullOrWhiteSpace(body) ? res.ReasonPhrase : body.Trim('"');
+        if (res.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            SetAuthToken(null);
+            Session.Clear();
+            throw new UnauthorizedAccessException("Session expired or unauthorized. Sign in again.");
+        }
         throw new HttpRequestException($"{(int)res.StatusCode} {res.ReasonPhrase}: {detail}");
     }
 

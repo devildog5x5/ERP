@@ -61,6 +61,120 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<CompanySettings>().ToTable("CompanySettings");
         modelBuilder.Entity<StockMovement>().ToTable("StockMovements");
         modelBuilder.Entity<AuthToken>().HasIndex(t => t.Token).IsUnique();
+
+        // Generous string sizes for SQL Server (SQLite stores these as TEXT anyway).
+        modelBuilder.Entity<Supplier>(e =>
+        {
+            e.Property(x => x.Name).HasMaxLength(200);
+            e.Property(x => x.Email).HasMaxLength(256);
+            e.Property(x => x.Phone).HasMaxLength(64);
+            e.Property(x => x.Address).HasMaxLength(500);
+            e.Property(x => x.CurrencyCode).HasMaxLength(8);
+        });
+        modelBuilder.Entity<Customer>(e =>
+        {
+            e.Property(x => x.Name).HasMaxLength(200);
+            e.Property(x => x.Email).HasMaxLength(256);
+            e.Property(x => x.Phone).HasMaxLength(64);
+            e.Property(x => x.Address).HasMaxLength(500);
+            e.Property(x => x.CurrencyCode).HasMaxLength(8);
+        });
+        modelBuilder.Entity<Product>(e =>
+        {
+            e.Property(x => x.Sku).HasMaxLength(64);
+            e.Property(x => x.Upc).HasMaxLength(64);
+            e.Property(x => x.Name).HasMaxLength(300);
+            e.Property(x => x.Description).HasMaxLength(2000);
+            e.Property(x => x.Category).HasMaxLength(120);
+            e.Property(x => x.Unit).HasMaxLength(32);
+            e.Property(x => x.CostingMethod).HasMaxLength(32);
+        });
+        modelBuilder.Entity<PurchaseOrder>(e =>
+        {
+            e.Property(x => x.PoNumber).HasMaxLength(64);
+            e.Property(x => x.Status).HasMaxLength(32);
+            e.Property(x => x.Notes).HasMaxLength(4000);
+            e.Property(x => x.CurrencyCode).HasMaxLength(8);
+        });
+        modelBuilder.Entity<PurchaseOrderLine>(e =>
+        {
+            e.Property(x => x.LotNumber).HasMaxLength(64);
+        });
+        modelBuilder.Entity<SalesOrder>(e =>
+        {
+            e.Property(x => x.OrderNumber).HasMaxLength(64);
+            e.Property(x => x.DocumentType).HasMaxLength(32);
+            e.Property(x => x.Status).HasMaxLength(32);
+            e.Property(x => x.Notes).HasMaxLength(4000);
+            e.Property(x => x.CurrencyCode).HasMaxLength(8);
+            e.Property(x => x.TrackingNumber).HasMaxLength(128);
+            e.Property(x => x.Carrier).HasMaxLength(128);
+        });
+        modelBuilder.Entity<SalesOrderLine>(e =>
+        {
+            e.Property(x => x.LotNumber).HasMaxLength(64);
+            e.Property(x => x.SerialNumber).HasMaxLength(128);
+        });
+        modelBuilder.Entity<Reminder>(e =>
+        {
+            e.Property(x => x.ReminderType).HasMaxLength(64);
+            e.Property(x => x.Severity).HasMaxLength(32);
+            e.Property(x => x.Title).HasMaxLength(300);
+            e.Property(x => x.Message).HasMaxLength(4000);
+            e.Property(x => x.RelatedEntityType).HasMaxLength(64);
+        });
+        modelBuilder.Entity<StockMovement>(e =>
+        {
+            e.Property(x => x.Reason).HasMaxLength(64);
+            e.Property(x => x.ReasonCode).HasMaxLength(64);
+            e.Property(x => x.ReferenceType).HasMaxLength(64);
+            e.Property(x => x.LotNumber).HasMaxLength(64);
+            e.Property(x => x.SerialNumber).HasMaxLength(128);
+            e.Property(x => x.Notes).HasMaxLength(2000);
+        });
+        modelBuilder.Entity<CompanySettings>(e =>
+        {
+            e.Property(x => x.CompanyName).HasMaxLength(200);
+            e.Property(x => x.Currency).HasMaxLength(8);
+            e.Property(x => x.ReceiptFooter).HasMaxLength(2000);
+            e.Property(x => x.Address).HasMaxLength(500);
+            e.Property(x => x.Phone).HasMaxLength(64);
+            e.Property(x => x.Email).HasMaxLength(256);
+            e.Property(x => x.SmtpHost).HasMaxLength(256);
+            e.Property(x => x.SmtpUsername).HasMaxLength(256);
+            e.Property(x => x.SmtpPassword).HasMaxLength(512);
+            e.Property(x => x.SmtpFrom).HasMaxLength(256);
+            e.Property(x => x.FiscalYearStart).HasMaxLength(16);
+        });
+        modelBuilder.Entity<AppUser>(e =>
+        {
+            e.Property(x => x.UserName).HasMaxLength(128);
+            e.Property(x => x.DisplayName).HasMaxLength(200);
+            e.Property(x => x.PasswordHash).HasMaxLength(256);
+            e.Property(x => x.PasswordSalt).HasMaxLength(256);
+        });
+        modelBuilder.Entity<Role>(e =>
+        {
+            e.Property(x => x.Name).HasMaxLength(100);
+            e.Property(x => x.Permissions).HasMaxLength(2000);
+        });
+        modelBuilder.Entity<AuthToken>(e =>
+        {
+            e.Property(x => x.Token).HasMaxLength(512);
+        });
+        modelBuilder.Entity<AuditLog>(e =>
+        {
+            e.Property(x => x.UserName).HasMaxLength(128);
+            e.Property(x => x.Action).HasMaxLength(64);
+            e.Property(x => x.EntityType).HasMaxLength(64);
+            e.Property(x => x.Details).HasMaxLength(4000);
+        });
+        modelBuilder.Entity<Location>(e =>
+        {
+            e.Property(x => x.Code).HasMaxLength(32);
+            e.Property(x => x.Name).HasMaxLength(200);
+            e.Property(x => x.Bin).HasMaxLength(64);
+        });
     }
 }
 

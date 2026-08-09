@@ -38,7 +38,11 @@ public partial class FinanceView : UserControl
     private async void ClosePeriod_Click(object sender, RoutedEventArgs e)
     {
         if (PeriodGrid.SelectedItem is not FiscalPeriodDto p) return;
-        if (!EntityDialogs.ConfirmDelete(Window.GetWindow(this)!, $"close period {p.Name}")) return;
+        var owner = Window.GetWindow(this) ?? Application.Current.MainWindow;
+        if (owner == null) return;
+        if (!EntityDialogs.Confirm(owner, "Close period",
+                $"Close fiscal period \"{p.Name}\"?\nNo further postings will be allowed in this period."))
+            return;
         try { await App.Api.ClosePeriodAsync(p.Id); await LoadAsync(); }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }
     }

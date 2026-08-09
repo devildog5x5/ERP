@@ -17,6 +17,8 @@ public partial class ScanStationView : UserControl
     private readonly ObservableCollection<CartLine> _cart = new();
     private List<PoOption> _openPos = new();
     private decimal _taxRate;
+    private bool _scanning;
+    private bool _checkingOut;
 
     public ScanStationView()
     {
@@ -60,7 +62,7 @@ public partial class ScanStationView : UserControl
 
     private async void ScanBox_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key != Key.Enter) return;
+        if (e.Key != Key.Enter || _scanning) return;
         e.Handled = true;
         var code = ScanBox.Text.Trim();
         ScanBox.Clear();
@@ -71,6 +73,8 @@ public partial class ScanStationView : UserControl
 
     private async Task HandleScanAsync(string code)
     {
+        _scanning = true;
+        ScanBox.IsEnabled = false;
         try
         {
             if (ModeLookup.IsChecked == true)
@@ -132,10 +136,16 @@ public partial class ScanStationView : UserControl
             ShowResult(false, "Scan failed", ex.Message);
             System.Media.SystemSounds.Hand.Play();
         }
+        finally
+        {
+            _scanning = false;
+            ScanBox.IsEnabled = true;
+        }
     }
 
     private async void Checkout_Click(object sender, RoutedEventArgs e)
     {
+        if (_checkingOut) return;
         if (_cart.Count == 0)
         {
             MessageBox.Show("Cart is empty. Scan items in Quick sale mode.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -146,6 +156,8 @@ public partial class ScanStationView : UserControl
             MessageBox.Show("Select a customer.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
+        _checkingOut = true;
+        if (sender is UIElement btn) btn.IsEnabled = false;
         try
         {
             var order = await App.Api.CreateSalesOrderAsync(new SalesOrderCreateDto
@@ -160,12 +172,19 @@ public partial class ScanStationView : UserControl
                     UnitPrice = c.UnitPrice
                 }).ToList()
             });
+            if (order == null)
+                throw new InvalidOperationException("Sale was not created.");
             _cart.Clear();
             UpdateCartTotals();
             MovementGrid.ItemsSource = await App.Api.GetStockMovementsAsync();
             ShowResult(true, $"Sold {order.OrderNumber}", $"Subtotal {order.Subtotal:C} · Tax {order.TaxAmount:C} · Total {order.Total:C}");
         }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }
+        finally
+        {
+            _checkingOut = false;
+            if (sender is UIElement b) b.IsEnabled = true;
+        }
     }
 
     private void ClearCart_Click(object sender, RoutedEventArgs e)

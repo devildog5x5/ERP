@@ -81,7 +81,8 @@ public static class Mapping
         SmtpHost = s.SmtpHost,
         SmtpPort = s.SmtpPort,
         SmtpUsername = s.SmtpUsername,
-        SmtpPassword = s.SmtpPassword,
+        // Never return the stored SMTP password to clients.
+        SmtpPassword = string.IsNullOrEmpty(s.SmtpPassword) ? null : "********",
         SmtpEnableSsl = s.SmtpEnableSsl,
         SmtpFrom = s.SmtpFrom,
         PoApprovalThreshold = s.PoApprovalThreshold,
@@ -130,6 +131,7 @@ public static class Mapping
         MarginAmount = so.Lines.Sum(l => (l.UnitPrice * (1 - l.DiscountPercent / 100m) - l.UnitCostSnapshot) * l.Quantity),
         TrackingNumber = so.TrackingNumber,
         Carrier = so.Carrier,
+        Notes = so.Notes,
         Lines = so.Lines.Select(l => new SalesOrderLineDto
         {
             Id = l.Id,

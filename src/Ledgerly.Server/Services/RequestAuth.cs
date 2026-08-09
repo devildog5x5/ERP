@@ -27,20 +27,37 @@ public static class RequestAuth
         return row.User;
     }
 
-    public static bool HasPermission(AppUser? user, string permission)
+    public static bool IsAdministrator(AppUser? user)
     {
         if (user?.Role == null) return false;
-        var perms = (user.Role.Permissions ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(p => p.Trim().ToLowerInvariant()).ToList();
-        return perms.Contains("admin") || perms.Contains(permission.ToLowerInvariant()) ||
-               user.Role.Name.Equals("Administrator", StringComparison.OrdinalIgnoreCase);
+        if (user.Role.Name.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
+            return true;
+        return PermissionSet(user).Contains("admin");
     }
+
+    public static bool HasPermission(AppUser? user, string permission)
+    {
+        if (user?.Role == null || string.IsNullOrWhiteSpace(permission)) return false;
+
+        var want = permission.Trim().ToLowerInvariant();
+        // User management / assigning access levels is Administrator-only.
+        if (want is "users" or "admin")
+            return IsAdministrator(user);
+
+        if (IsAdministrator(user)) return true;
+        return PermissionSet(user).Contains(want);
+    }
+
+    private static System.Collections.Generic.HashSet<string> PermissionSet(AppUser user) =>
+        (user.Role.Permissions ?? "")
+            .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Trim().ToLowerInvariant())
+            .Where(p => p.Length > 0)
+            .ToHashSet();
 
     public static bool IsAnonymousAllowed(HttpActionContext actionContext)
     {
-        var path = actionContext.Request.RequestUri?.AbsolutePath?.ToLowerInvariant() ?? "";
-        return path.EndsWith("/api/health") ||
-               path.EndsWith("/api/auth/login") ||
-               path.Contains("/api/auth/login");
+        var path = (actionContext.Request.RequestUri?.AbsolutePath ?? "").TrimEnd('/').ToLowerInvariant();
+        return path.EndsWith("/api/health") || path.EndsWith("/api/auth/login");
     }
 }

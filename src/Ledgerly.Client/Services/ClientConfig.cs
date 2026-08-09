@@ -21,7 +21,17 @@ public sealed class ClientConfig
             {
                 var cfg = JsonConvert.DeserializeObject<ClientConfig>(File.ReadAllText(Path));
                 if (cfg != null && !string.IsNullOrWhiteSpace(cfg.ApiBaseUrl))
-                    return cfg;
+                {
+                    try
+                    {
+                        cfg.ApiBaseUrl = ApiClient.NormalizeBaseAddress(cfg.ApiBaseUrl);
+                        return cfg;
+                    }
+                    catch
+                    {
+                        /* fall through to defaults */
+                    }
+                }
             }
         }
         catch { /* use defaults */ }
