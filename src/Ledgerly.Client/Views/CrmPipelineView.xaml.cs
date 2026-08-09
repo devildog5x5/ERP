@@ -39,7 +39,7 @@ public partial class CrmPipelineView : UserControl
     {
         if (Grid.SelectedItem is not CrmOpportunityDto selected)
         {
-            MessageBox.Show("Select an opportunity first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select an opportunity first.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         try
@@ -57,13 +57,13 @@ public partial class CrmPipelineView : UserControl
         if (Grid.SelectedItem is not CrmOpportunityDto selected) return;
         if (MessageBox.Show(
                 $"Mark \"{selected.Name}\" as won and create a sales quote?",
-                "Coalesce.ERP.CRM", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                "Coalesce", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
         try
         {
             await App.Api.WinCrmOpportunityAsync(selected.Id, "quote");
             MessageBox.Show("Opportunity won. A sales quote was created — open Sales to review it.",
-                "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+                "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             await LoadAsync();
         }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }

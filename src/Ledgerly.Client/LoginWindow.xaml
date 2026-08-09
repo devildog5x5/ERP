@@ -1,7 +1,7 @@
 <Window x:Class="Ledgerly.Client.LoginWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Coalesce.ERP.CRM — Sign in" Height="460" Width="420"
+        Title="Coalesce — Sign in" Height="460" Width="420"
         Icon="pack://application:,,,/Assets/coalesce.ico"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
         Background="#EEF3F6" FontFamily="Segoe UI">
@@ -14,8 +14,9 @@
                            Margin="4" RenderOptions.BitmapScalingMode="HighQuality"/>
                 </Border>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Coalesce.ERP.CRM" FontSize="22" FontWeight="SemiBold" Foreground="#15202B"/>
-                    <TextBlock Text="Sign in to ERP + CRM" Foreground="#667888" Margin="0,4,0,0"/>
+                    <TextBlock Text="Coalesce" FontSize="22" FontWeight="SemiBold" Foreground="#15202B"/>
+                    <TextBlock Text="Where ERP and CRM come together" Foreground="#667888" FontSize="12" Margin="0,4,0,0"
+                               TextWrapping="Wrap"/>
                 </StackPanel>
             </StackPanel>
             <TextBlock Text="Username" Foreground="#667888" Margin="0,0,0,4"/>

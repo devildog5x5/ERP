@@ -1,6 +1,8 @@
-# Coalesce.ERP.CRM (C#)
+# Coalesce
 
-Windows client/server **ERP + CRM** for small businesses: inventory, purchasing, sales, suppliers/customers, CRM pipeline (leads, accounts, contacts, opportunities, activities), and operational reminders for stock and buying.
+**Where ERP and CRM come together.**
+
+Windows client/server app for small businesses: inventory, purchasing, sales, suppliers/customers, CRM pipeline (leads, accounts, contacts, opportunities, activities), and operational reminders for stock and buying.
 
 **Runs on Windows 7 SP1 through current Windows** (7 / 8.1 / 10 / 11 and newer).
 
@@ -12,11 +14,11 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.3/CoalesceSetup.exe) |
-| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.3/CoalesceClientSetup.exe) |
-| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.3/CoalesceServerSetup.exe) |
+| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.4/CoalesceSetup.exe) |
+| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.4/CoalesceClientSetup.exe) |
+| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.4/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.3](https://github.com/devildog5x5/ERP/releases/tag/v1.6.3)
+- Latest release: [v1.6.4](https://github.com/devildog5x5/ERP/releases/tag/v1.6.4)
 - Every installer asks up front — loudly — whether to install **Client**, **Server**, or **Both**.
 - Default login after install: `admin` / `admin`
 - Server listens at `http://127.0.0.1:8000` by default

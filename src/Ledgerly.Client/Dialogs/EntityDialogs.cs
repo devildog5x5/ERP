@@ -37,7 +37,7 @@ public static class EntityDialogs
 
         if (string.IsNullOrWhiteSpace(sku.Text) || string.IsNullOrWhiteSpace(name.Text))
         {
-            MessageBox.Show("SKU and name are required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("SKU and name are required.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -70,7 +70,7 @@ public static class EntityDialogs
 
         if (string.IsNullOrWhiteSpace(name.Text))
         {
-            MessageBox.Show("Name is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Name is required.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -99,7 +99,7 @@ public static class EntityDialogs
 
         if (string.IsNullOrWhiteSpace(title.Text))
         {
-            MessageBox.Show("Title is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Title is required.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -117,7 +117,7 @@ public static class EntityDialogs
     {
         if (suppliers.Count == 0 || products.Count == 0)
         {
-            MessageBox.Show("Add at least one supplier and one product first.", "Coalesce.ERP.CRM",
+            MessageBox.Show("Add at least one supplier and one product first.", "Coalesce",
                 MessageBoxButton.OK, MessageBoxImage.Information);
             return null;
         }
@@ -179,7 +179,7 @@ public static class EntityDialogs
 
         if (lines.Count == 0)
         {
-            MessageBox.Show("Add at least one line.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Add at least one line.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -205,7 +205,7 @@ public static class EntityDialogs
     {
         if (customers.Count == 0 || products.Count == 0)
         {
-            MessageBox.Show("Add at least one customer and one product first.", "Coalesce.ERP.CRM",
+            MessageBox.Show("Add at least one customer and one product first.", "Coalesce",
                 MessageBoxButton.OK, MessageBoxImage.Information);
             return null;
         }
@@ -284,7 +284,7 @@ public static class EntityDialogs
 
         if (lines.Count == 0)
         {
-            MessageBox.Show("Add at least one line.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Add at least one line.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -324,7 +324,7 @@ public static class EntityDialogs
         var remaining = po.Lines.Where(l => l.QuantityOrdered > l.QuantityReceived).ToList();
         if (remaining.Count == 0)
         {
-            MessageBox.Show("Nothing left to receive on this PO.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Nothing left to receive on this PO.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             return null;
         }
 
@@ -501,7 +501,7 @@ public static class EntityDialogs
             return null;
         if (string.IsNullOrWhiteSpace(name.Text))
         {
-            MessageBox.Show("Name is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Name is required.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
         return new CrmLeadDto
@@ -533,7 +533,7 @@ public static class EntityDialogs
             return null;
         if (string.IsNullOrWhiteSpace(name.Text))
         {
-            MessageBox.Show("Name is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Name is required.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
         return new CrmAccountDto
@@ -567,7 +567,7 @@ public static class EntityDialogs
             return null;
         if (string.IsNullOrWhiteSpace(first.Text))
         {
-            MessageBox.Show("First name is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("First name is required.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
         return new CrmContactDto
@@ -588,7 +588,7 @@ public static class EntityDialogs
     {
         if (accounts.Count == 0)
         {
-            MessageBox.Show("Create a CRM account first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Create a CRM account first.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             return null;
         }
         var name = Field(existing?.Name ?? "");
@@ -607,7 +607,7 @@ public static class EntityDialogs
             return null;
         if (string.IsNullOrWhiteSpace(name.Text))
         {
-            MessageBox.Show("Name is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Name is required.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
         DateTime? expected = null;
@@ -649,7 +649,7 @@ public static class EntityDialogs
             return null;
         if (string.IsNullOrWhiteSpace(subject.Text))
         {
-            MessageBox.Show("Subject is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Subject is required.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
         DateTime? dueAt = null;
@@ -692,7 +692,7 @@ public static class EntityDialogs
     {
         if (roles.Count == 0)
         {
-            MessageBox.Show("No roles are defined.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("No roles are defined.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -714,7 +714,7 @@ public static class EntityDialogs
 
         if (string.IsNullOrWhiteSpace(userName.Text) || string.IsNullOrWhiteSpace(password.Text))
         {
-            MessageBox.Show("Username and password are required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Username and password are required.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -745,7 +745,7 @@ public static class EntityDialogs
             App.PromptRelogin(ex.Message);
             return;
         }
-        MessageBox.Show(CleanError(ex.Message), "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+        MessageBox.Show(CleanError(ex.Message), "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
     private static string CleanError(string? message)

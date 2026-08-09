@@ -40,7 +40,7 @@ public partial class PartnersView : UserControl
     {
         if (Grid.SelectedItem is not PartnerDto selected)
         {
-            MessageBox.Show($"Select a {Kind} first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"Select a {Kind} first.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         try

@@ -274,7 +274,7 @@ public class DashboardDto
 public class HealthDto
 {
     public string Status { get; set; } = "ok";
-    public string App { get; set; } = "Coalesce.ERP.CRM";
+    public string App { get; set; } = Brand.ProductName;
     public string Role { get; set; } = "api-server";
     public string DatabaseProvider { get; set; } = "Sqlite";
     public string Database { get; set; } = "";

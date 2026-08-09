@@ -11,7 +11,7 @@ public static class DocumentPrint
     {
         if (doc == null || string.IsNullOrWhiteSpace(doc.Html))
         {
-            MessageBox.Show("Document not available.", "Coalesce.ERP.CRM");
+            MessageBox.Show("Document not available.", "Coalesce");
             return;
         }
         var path = Path.Combine(Path.GetTempPath(), $"ledgerly-{System.Guid.NewGuid():N}.html");

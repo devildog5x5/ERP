@@ -36,7 +36,7 @@ public partial class CrmActivitiesView : UserControl
     {
         if (Grid.SelectedItem is not CrmActivityDto selected)
         {
-            MessageBox.Show("Select an activity first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select an activity first.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         try

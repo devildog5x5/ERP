@@ -1,4 +1,4 @@
-# Build Coalesce.ERP.CRM (.NET Framework 4.8) binaries and ALL three Inno Setup installers:
+# Build Coalesce (.NET Framework 4.8) binaries and ALL three Inno Setup installers:
 #   CoalesceSetup.exe / CoalesceClientSetup.exe / CoalesceServerSetup.exe
 #   Each includes Client + Server payloads and opens with a loud
 #   Client / Server / Both chooser (default selection differs by package name).

@@ -1,28 +1,28 @@
-; Coalesce.ERP.CRM installers (C# / .NET Framework 4.8)
+; Coalesce installers (C# / .NET Framework 4.8)
 ; Build with: ISCC /DPackage=combined|client|server installer\coalesce.iss
 #ifndef Package
   #define Package "combined"
 #endif
 
-#define MyAppVersion "1.6.2"
+#define MyAppVersion "1.6.4"
 #define MyAppPublisher "Coalesce"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
-#define MyAppName "Coalesce.ERP.CRM"
+#define MyAppName "Coalesce"
 #define AppIdGuid "{{D0F6B2E5-7A81-4C24-AF5D-B3C2E4F60719}"
 #define DefaultDir "{localappdata}\Programs\Coalesce"
 #define UninstallIcon "{app}\Client\Coalesce.Client.exe"
 
 #if Package == "client"
   #define OutputName "CoalesceClientSetup"
-  #define VersionDesc "Coalesce.ERP.CRM installer (Client / Server / Both)"
+  #define VersionDesc "Coalesce installer (Client / Server / Both)"
   #define DefaultRole "client"
 #elif Package == "server"
   #define OutputName "CoalesceServerSetup"
-  #define VersionDesc "Coalesce.ERP.CRM installer (Client / Server / Both)"
+  #define VersionDesc "Coalesce installer (Client / Server / Both)"
   #define DefaultRole "server"
 #else
   #define OutputName "CoalesceSetup"
-  #define VersionDesc "Coalesce.ERP.CRM installer (Client / Server / Both)"
+  #define VersionDesc "Coalesce installer (Client / Server / Both)"
   #define DefaultRole "both"
 #endif
 
@@ -89,7 +89,7 @@ Source: "..\dist\CoalesceClient\*"; DestDir: "{app}\Client"; Flags: ignoreversio
 [Icons]
 Name: "{group}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"; Components: server
 Name: "{group}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Components: client
-Name: "{group}\Uninstall Coalesce.ERP.CRM"; Filename: "{uninstallexe}"
+Name: "{group}\Uninstall Coalesce"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"; Tasks: desktopicon; Components: server
 Name: "{autodesktop}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Tasks: desktopicon; Components: client
 Name: "{userstartup}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"; Tasks: autostartserver; Components: server
@@ -127,14 +127,14 @@ begin
   GetWindowsVersionEx(Version);
   if (Version.Major < 6) or ((Version.Major = 6) and (Version.Minor < 1)) then
   begin
-    MsgBox('Coalesce.ERP.CRM requires Windows 7 SP1 or later.', mbError, MB_OK);
+    MsgBox('Coalesce requires Windows 7 SP1 or later.', mbError, MB_OK);
     Result := False;
     exit;
   end;
 
   if not IsDotNet48OrLater() then
   begin
-    MsgBox('Coalesce.ERP.CRM requires .NET Framework 4.8.'#13#10#13#10 +
+    MsgBox('Coalesce requires .NET Framework 4.8.'#13#10#13#10 +
       'Install it from:'#13#10 +
       'https://dotnet.microsoft.com/download/dotnet-framework/net48',
       mbError, MB_OK);
@@ -262,7 +262,7 @@ begin
 
   RoleSubhead := TNewStaticText.Create(RolePage);
   RoleSubhead.Parent := RolePage.Surface;
-  RoleSubhead.Caption := 'Coalesce.ERP.CRM — pick one option below.';
+  RoleSubhead.Caption := 'Where ERP and CRM come together - pick one option below.';
   RoleSubhead.Font.Name := 'Segoe UI';
   RoleSubhead.Font.Size := 11;
   RoleSubhead.Font.Style := [fsBold];
@@ -274,7 +274,7 @@ begin
 
   RoleBoth := TRadioButton.Create(RolePage);
   RoleBoth.Parent := RolePage.Surface;
-  RoleBoth.Caption := 'BOTH  —  Client and Server (recommended)';
+  RoleBoth.Caption := 'BOTH  -  Client and Server (recommended)';
   RoleBoth.Font.Name := 'Segoe UI';
   RoleBoth.Font.Size := 12;
   RoleBoth.Font.Style := [fsBold];
@@ -286,7 +286,7 @@ begin
 
   RoleHintBoth := TNewStaticText.Create(RolePage);
   RoleHintBoth.Parent := RolePage.Surface;
-  RoleHintBoth.Caption := 'Full ERP + CRM on this PC: API/database host + desktop UI.';
+  RoleHintBoth.Caption := 'Full Coalesce on this PC: API/database host + desktop UI.';
   RoleHintBoth.Font.Name := 'Segoe UI';
   RoleHintBoth.Font.Size := 9;
   RoleHintBoth.Left := ScaleX(28);
@@ -298,7 +298,7 @@ begin
 
   RoleClient := TRadioButton.Create(RolePage);
   RoleClient.Parent := RolePage.Surface;
-  RoleClient.Caption := 'CLIENT ONLY  —  Desktop UI';
+  RoleClient.Caption := 'CLIENT ONLY  -  Desktop UI';
   RoleClient.Font.Name := 'Segoe UI';
   RoleClient.Font.Size := 12;
   RoleClient.Font.Style := [fsBold];
@@ -322,7 +322,7 @@ begin
 
   RoleServer := TRadioButton.Create(RolePage);
   RoleServer.Parent := RolePage.Surface;
-  RoleServer.Caption := 'SERVER ONLY  —  API and database';
+  RoleServer.Caption := 'SERVER ONLY  -  API and database';
   RoleServer.Font.Name := 'Segoe UI';
   RoleServer.Font.Size := 12;
   RoleServer.Font.Style := [fsBold];

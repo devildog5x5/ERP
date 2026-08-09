@@ -39,7 +39,7 @@ public partial class CrmAccountsView : UserControl
     {
         if (Grid.SelectedItem is not CrmAccountDto selected)
         {
-            MessageBox.Show("Select an account first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select an account first.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         try

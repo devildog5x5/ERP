@@ -99,12 +99,12 @@ public partial class MainWindow : Window
         try
         {
             await App.Api.RunRemindersAsync();
-            MessageBox.Show("Reminder scan complete.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Reminder scan complete.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             await NavigateAsync(_page);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Could not run reminders.\n{ex.Message}", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show($"Could not run reminders.\n{ex.Message}", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 

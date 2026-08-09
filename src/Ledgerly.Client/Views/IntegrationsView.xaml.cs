@@ -33,7 +33,7 @@ public partial class IntegrationsView : UserControl
         try
         {
             var r = await App.Api.BackupAsync();
-            MessageBox.Show($"Backup created:\n{r?.Path}", "Coalesce.ERP.CRM");
+            MessageBox.Show($"Backup created:\n{r?.Path}", "Coalesce");
             await LoadAsync();
         }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }
@@ -55,7 +55,7 @@ public partial class IntegrationsView : UserControl
             if (dlg.ShowDialog() == true)
             {
                 File.WriteAllText(dlg.FileName, csv);
-                MessageBox.Show("Exported.", "Coalesce.ERP.CRM");
+                MessageBox.Show("Exported.", "Coalesce");
             }
             await LoadAsync();
         }
@@ -69,7 +69,7 @@ public partial class IntegrationsView : UserControl
             var name = EntityDialogs.FieldPrompt(Window.GetWindow(this)!, "API key name", "Integration");
             if (string.IsNullOrWhiteSpace(name)) return;
             var key = await App.Api.CreateApiKeyAsync(name!);
-            MessageBox.Show($"API key created (copy now):\n{key?.ApiKey}", "Coalesce.ERP.CRM");
+            MessageBox.Show($"API key created (copy now):\n{key?.ApiKey}", "Coalesce");
             await LoadAsync();
         }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }

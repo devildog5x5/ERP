@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net48-windows</TargetFramework>
@@ -8,8 +8,8 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>Ledgerly.Client</RootNamespace>
     <AssemblyName>Coalesce.Client</AssemblyName>
-    <AssemblyTitle>Coalesce.ERP.CRM Client</AssemblyTitle>
-    <Product>Coalesce.ERP.CRM</Product>
+    <AssemblyTitle>Coalesce Client</AssemblyTitle>
+    <Product>Coalesce</Product>
     <ApplicationIcon>Assets\coalesce.ico</ApplicationIcon>
     <SupportedOSPlatform>windows7.0</SupportedOSPlatform>
     <PlatformTarget>x64</PlatformTarget>

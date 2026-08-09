@@ -7,8 +7,8 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <RootNamespace>Ledgerly.Server</RootNamespace>
     <AssemblyName>Coalesce.Server</AssemblyName>
-    <AssemblyTitle>Coalesce.ERP.CRM Server</AssemblyTitle>
-    <Product>Coalesce.ERP.CRM</Product>
+    <AssemblyTitle>Coalesce Server</AssemblyTitle>
+    <Product>Coalesce</Product>
     <ApplicationIcon>Assets\coalesce.ico</ApplicationIcon>
     <SupportedOSPlatform>windows7.0</SupportedOSPlatform>
     <!-- Required so native SQLite (e_sqlite3) loads correctly on Framework -->

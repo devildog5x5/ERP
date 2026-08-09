@@ -53,7 +53,7 @@ public partial class ChangePasswordView : UserControl
             NewBox.Password = "";
             ConfirmBox.Password = "";
             StatusText.Text = "Password updated.";
-            MessageBox.Show("Your password was changed successfully.", "Coalesce.ERP.CRM",
+            MessageBox.Show("Your password was changed successfully.", "Coalesce",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }

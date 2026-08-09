@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using Ledgerly.Server.Data;
+using Ledgerly.Shared;
 using Microsoft.Owin.Hosting;
 
 namespace Ledgerly.Server;
@@ -42,7 +43,8 @@ internal static class Program
 
             DbSeeder.Seed(includeDemoData);
 
-            Console.WriteLine("Coalesce.ERP.CRM API server (C# / .NET Framework 4.8)");
+            Console.WriteLine("Coalesce API server (C# / .NET Framework 4.8)");
+            Console.WriteLine(Brand.Tagline);
             Console.WriteLine("Compatible with Windows 7 SP1 and later");
             Console.WriteLine($"Provider : {Db.Provider}");
             Console.WriteLine($"Database : {config.Describe()}");

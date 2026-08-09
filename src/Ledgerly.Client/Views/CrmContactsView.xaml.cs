@@ -39,7 +39,7 @@ public partial class CrmContactsView : UserControl
     {
         if (Grid.SelectedItem is not CrmContactDto selected)
         {
-            MessageBox.Show("Select a contact first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a contact first.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         try

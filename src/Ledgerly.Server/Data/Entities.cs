@@ -177,7 +177,7 @@ public class StockMovement
 public class CompanySettings
 {
     public int Id { get; set; } = 1;
-    public string CompanyName { get; set; } = "Coalesce.ERP.CRM";
+    public string CompanyName { get; set; } = "Coalesce";
     public decimal DefaultTaxRate { get; set; }
     public string Currency { get; set; } = "USD";
     public string? ReceiptFooter { get; set; }

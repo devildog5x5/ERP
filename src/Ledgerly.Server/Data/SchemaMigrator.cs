@@ -25,7 +25,7 @@ public static class SchemaMigrator
             db.Settings.Add(new CompanySettings
             {
                 Id = 1,
-                CompanyName = "Coalesce.ERP.CRM",
+                CompanyName = "Coalesce",
                 DefaultTaxRate = 0,
                 Currency = "USD",
                 ReceiptFooter = "Thank you for your business.",

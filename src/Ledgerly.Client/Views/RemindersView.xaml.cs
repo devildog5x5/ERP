@@ -38,7 +38,7 @@ public partial class RemindersView : UserControl
     {
         if (List.SelectedItem is not ReminderDto selected)
         {
-            MessageBox.Show("Select a reminder first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a reminder first.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         try

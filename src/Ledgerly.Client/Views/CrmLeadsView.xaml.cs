@@ -36,7 +36,7 @@ public partial class CrmLeadsView : UserControl
     {
         if (Grid.SelectedItem is not CrmLeadDto selected)
         {
-            MessageBox.Show("Select a lead first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a lead first.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         try
@@ -54,12 +54,12 @@ public partial class CrmLeadsView : UserControl
         if (Grid.SelectedItem is not CrmLeadDto selected) return;
         if (selected.Status == "converted")
         {
-            MessageBox.Show("This lead is already converted.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("This lead is already converted.", "Coalesce", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         if (MessageBox.Show(
                 $"Convert \"{selected.Name}\" to a CRM account and ERP customer?",
-                "Coalesce.ERP.CRM", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                "Coalesce", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
         try
         {
