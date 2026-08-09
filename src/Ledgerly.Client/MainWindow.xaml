@@ -1,8 +1,8 @@
-﻿<Window x:Class="Ledgerly.Client.MainWindow"
+<Window x:Class="Ledgerly.Client.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:svc="clr-namespace:Ledgerly.Client.Services"
-        Title="Ledgerly ERP"
+        Title="Coalesce.ERP.CRM"
         Height="780" Width="1280"
         MinHeight="640" MinWidth="980"
         Background="{StaticResource BgBrush}"
@@ -20,12 +20,12 @@
                 <StackPanel DockPanel.Dock="Top" Margin="4,8,4,24">
                     <StackPanel Orientation="Horizontal">
                         <Border Width="42" Height="42" CornerRadius="12" Background="{StaticResource BrandBrush}" Margin="0,0,12,0">
-                            <TextBlock Text="L" Foreground="White" FontSize="20" FontWeight="Bold"
+                            <TextBlock Text="C" Foreground="White" FontSize="20" FontWeight="Bold"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Ledgerly" Foreground="White" FontSize="20" FontWeight="SemiBold"/>
-                            <TextBlock Text="Operations ERP" Foreground="#9AA8B4" FontSize="12"/>
+                            <TextBlock Text="Coalesce" Foreground="White" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text="ERP.CRM" Foreground="#9AA8B4" FontSize="12"/>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
@@ -57,6 +57,13 @@
                         <TextBlock x:Name="NavDirectoryHeader" Text="DIRECTORY" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
                         <Button Content="Suppliers" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="suppliers" svc:Access.Permission="partners"/>
                         <Button Content="Customers" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="customers" svc:Access.Permission="partners"/>
+
+                        <TextBlock x:Name="NavCrmHeader" Text="CRM" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
+                        <Button Content="Pipeline" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="crm-pipeline" svc:Access.Permission="crm"/>
+                        <Button Content="Leads" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="crm-leads" svc:Access.Permission="crm"/>
+                        <Button Content="Accounts" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="crm-accounts" svc:Access.Permission="crm"/>
+                        <Button Content="Contacts" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="crm-contacts" svc:Access.Permission="crm"/>
+                        <Button Content="Activities" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="crm-activities" svc:Access.Permission="crm"/>
 
                         <TextBlock x:Name="NavFinanceHeader" Text="FINANCE" Foreground="#6A7A88" FontSize="11" FontWeight="Bold" Margin="12,16,0,6"/>
                         <Button Content="Finance / GL" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="finance" svc:Access.Permission="finance"/>

@@ -274,10 +274,126 @@ public class DashboardDto
 public class HealthDto
 {
     public string Status { get; set; } = "ok";
-    public string App { get; set; } = "Ledgerly ERP";
+    public string App { get; set; } = "Coalesce.ERP.CRM";
     public string Role { get; set; } = "api-server";
     public string DatabaseProvider { get; set; } = "Sqlite";
     public string Database { get; set; } = "";
     public string? ConfigPath { get; set; }
     public bool CanScaleOut { get; set; }
+}
+
+// --- CRM ---
+
+public class CrmLeadDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string? CompanyName { get; set; }
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? Source { get; set; }
+    public string Status { get; set; } = "new";
+    public int? OwnerUserId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int? ConvertedAccountId { get; set; }
+    public int? ConvertedCustomerId { get; set; }
+}
+
+public class CrmAccountDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public int? CustomerId { get; set; }
+    public string? CustomerName { get; set; }
+    public string? Industry { get; set; }
+    public string? Website { get; set; }
+    public string? BillingEmail { get; set; }
+    public bool IsActive { get; set; } = true;
+    public int? OwnerUserId { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CrmContactDto
+{
+    public int Id { get; set; }
+    public int? AccountId { get; set; }
+    public string? AccountName { get; set; }
+    public int? LeadId { get; set; }
+    public string FirstName { get; set; } = "";
+    public string? LastName { get; set; }
+    public string DisplayName => string.IsNullOrWhiteSpace(LastName) ? FirstName : $"{FirstName} {LastName}".Trim();
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? Title { get; set; }
+    public bool IsPrimary { get; set; }
+    public bool IsActive { get; set; } = true;
+}
+
+public class CrmOpportunityDto
+{
+    public int Id { get; set; }
+    public int AccountId { get; set; }
+    public string? AccountName { get; set; }
+    public int? PrimaryContactId { get; set; }
+    public string Name { get; set; } = "";
+    public string Stage { get; set; } = "prospecting";
+    public decimal? Amount { get; set; }
+    public DateTime? ExpectedClose { get; set; }
+    public int? OwnerUserId { get; set; }
+    public int? SalesOrderId { get; set; }
+    public string? LostReason { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CrmActivityDto
+{
+    public int Id { get; set; }
+    public string ActivityType { get; set; } = "task";
+    public string Subject { get; set; } = "";
+    public string? Body { get; set; }
+    public string Status { get; set; } = "open";
+    public DateTime? DueAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public int? OwnerUserId { get; set; }
+    public int? AccountId { get; set; }
+    public int? ContactId { get; set; }
+    public int? LeadId { get; set; }
+    public int? OpportunityId { get; set; }
+}
+
+public class CrmNoteDto
+{
+    public int Id { get; set; }
+    public string Body { get; set; } = "";
+    public int? AuthorUserId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int? AccountId { get; set; }
+    public int? ContactId { get; set; }
+    public int? LeadId { get; set; }
+    public int? OpportunityId { get; set; }
+}
+
+public class CrmCommunicationDto
+{
+    public int Id { get; set; }
+    public string Channel { get; set; } = "other";
+    public string Direction { get; set; } = "outbound";
+    public string? Subject { get; set; }
+    public string Summary { get; set; } = "";
+    public DateTime OccurredAt { get; set; }
+    public int? UserId { get; set; }
+    public int? AccountId { get; set; }
+    public int? ContactId { get; set; }
+    public int? LeadId { get; set; }
+    public int? OpportunityId { get; set; }
+}
+
+public class CrmLeadConvertDto
+{
+    public bool CreateCustomer { get; set; } = true;
+}
+
+public class CrmOpportunityWinDto
+{
+    public string DocumentType { get; set; } = "quote"; // quote|order
 }

@@ -17,6 +17,7 @@ public static class SchemaMigrator
             ApplySqliteColumnUpgrades(db);
             // EnsureCreated only runs on brand-new DBs; create any missing enterprise tables.
             EnsureSqliteEnterpriseTables(db);
+            EnsureSqliteCrmTables(db);
         }
 
         if (!db.Settings.Any())
@@ -24,7 +25,7 @@ public static class SchemaMigrator
             db.Settings.Add(new CompanySettings
             {
                 Id = 1,
-                CompanyName = "Ledgerly",
+                CompanyName = "Coalesce.ERP.CRM",
                 DefaultTaxRate = 0,
                 Currency = "USD",
                 ReceiptFooter = "Thank you for your business.",
@@ -105,6 +106,12 @@ public static class SchemaMigrator
         EnsureSqliteColumn(db, "CompanySettings", "RequireLogin", "INTEGER NOT NULL DEFAULT 1");
         EnsureSqliteColumn(db, "CompanySettings", "DefaultLocationId", "INTEGER NULL");
         EnsureSqliteColumn(db, "CompanySettings", "FiscalYearStart", "TEXT NULL");
+    }
+
+    private static void EnsureSqliteCrmTables(ErpDbContext db)
+    {
+        foreach (var sql in CrmSqliteDdl.Statements)
+            db.Database.ExecuteSqlRaw(sql);
     }
 
     private static void EnsureSqliteEnterpriseTables(ErpDbContext db)
@@ -201,5 +208,19 @@ internal static class EnterpriseSqliteDdl
         @"CREATE TABLE IF NOT EXISTS Webhooks (Id INTEGER PRIMARY KEY AUTOINCREMENT, EventName TEXT NOT NULL, TargetUrl TEXT NOT NULL, IsActive INTEGER NOT NULL);",
         @"CREATE TABLE IF NOT EXISTS IntegrationLogs (Id INTEGER PRIMARY KEY AUTOINCREMENT, CreatedAt TEXT NOT NULL, SystemName TEXT NOT NULL, Action TEXT NOT NULL, Status TEXT NOT NULL, Details TEXT NULL);",
         @"CREATE TABLE IF NOT EXISTS NumberSequences (Id INTEGER PRIMARY KEY AUTOINCREMENT, DocumentType TEXT NOT NULL, Prefix TEXT NOT NULL, NextValue INTEGER NOT NULL);"
+    };
+}
+
+internal static class CrmSqliteDdl
+{
+    public static readonly string[] Statements =
+    {
+        @"CREATE TABLE IF NOT EXISTS CrmLeads (Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT NOT NULL, CompanyName TEXT NULL, Email TEXT NULL, Phone TEXT NULL, Source TEXT NULL, Status TEXT NOT NULL, OwnerUserId INTEGER NULL, CreatedAt TEXT NOT NULL, ConvertedAccountId INTEGER NULL, ConvertedCustomerId INTEGER NULL);",
+        @"CREATE TABLE IF NOT EXISTS CrmAccounts (Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT NOT NULL, CustomerId INTEGER NULL, Industry TEXT NULL, Website TEXT NULL, BillingEmail TEXT NULL, IsActive INTEGER NOT NULL, OwnerUserId INTEGER NULL, CreatedAt TEXT NOT NULL);",
+        @"CREATE TABLE IF NOT EXISTS CrmContacts (Id INTEGER PRIMARY KEY AUTOINCREMENT, AccountId INTEGER NULL, LeadId INTEGER NULL, FirstName TEXT NOT NULL, LastName TEXT NULL, Email TEXT NULL, Phone TEXT NULL, Title TEXT NULL, IsPrimary INTEGER NOT NULL, IsActive INTEGER NOT NULL);",
+        @"CREATE TABLE IF NOT EXISTS CrmOpportunities (Id INTEGER PRIMARY KEY AUTOINCREMENT, AccountId INTEGER NOT NULL, PrimaryContactId INTEGER NULL, Name TEXT NOT NULL, Stage TEXT NOT NULL, Amount TEXT NULL, ExpectedClose TEXT NULL, OwnerUserId INTEGER NULL, SalesOrderId INTEGER NULL, LostReason TEXT NULL, CreatedAt TEXT NOT NULL);",
+        @"CREATE TABLE IF NOT EXISTS CrmActivities (Id INTEGER PRIMARY KEY AUTOINCREMENT, ActivityType TEXT NOT NULL, Subject TEXT NOT NULL, Body TEXT NULL, Status TEXT NOT NULL, DueAt TEXT NULL, CompletedAt TEXT NULL, OwnerUserId INTEGER NULL, AccountId INTEGER NULL, ContactId INTEGER NULL, LeadId INTEGER NULL, OpportunityId INTEGER NULL);",
+        @"CREATE TABLE IF NOT EXISTS CrmNotes (Id INTEGER PRIMARY KEY AUTOINCREMENT, Body TEXT NOT NULL, AuthorUserId INTEGER NULL, CreatedAt TEXT NOT NULL, AccountId INTEGER NULL, ContactId INTEGER NULL, LeadId INTEGER NULL, OpportunityId INTEGER NULL);",
+        @"CREATE TABLE IF NOT EXISTS CrmCommunications (Id INTEGER PRIMARY KEY AUTOINCREMENT, Channel TEXT NOT NULL, Direction TEXT NOT NULL, Subject TEXT NULL, Summary TEXT NOT NULL, OccurredAt TEXT NOT NULL, UserId INTEGER NULL, AccountId INTEGER NULL, ContactId INTEGER NULL, LeadId INTEGER NULL, OpportunityId INTEGER NULL);"
     };
 }

@@ -72,7 +72,7 @@ public partial class SalesOrdersView : UserControl
                 SalesOrderId = selected.Id,
                 Lines = { new SalesReturnLineDto { ProductId = line.ProductId, Quantity = 1, UnitPrice = line.UnitPrice } }
             });
-            MessageBox.Show("RMA created and stock returned.", "Ledgerly");
+            MessageBox.Show("RMA created and stock returned.", "Coalesce.ERP.CRM");
             await LoadAsync();
         }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }
@@ -96,7 +96,7 @@ public partial class SalesOrdersView : UserControl
     {
         if (Grid.SelectedItem is not SalesOrderDto selected)
         {
-            MessageBox.Show("Select a sales order first.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a sales order first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         try

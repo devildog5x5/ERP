@@ -26,7 +26,7 @@ public static class CsvExport
         foreach (var row in rows)
             sb.AppendLine(string.Join(",", row.Select(v => Escape(v?.ToString() ?? ""))));
         File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
-        MessageBox.Show($"Exported to\n{dlg.FileName}", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show($"Exported to\n{dlg.FileName}", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private static string Escape(string value)

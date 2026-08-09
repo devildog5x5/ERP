@@ -148,12 +148,12 @@ public partial class ScanStationView : UserControl
         if (_checkingOut) return;
         if (_cart.Count == 0)
         {
-            MessageBox.Show("Cart is empty. Scan items in Quick sale mode.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Cart is empty. Scan items in Quick sale mode.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         if (CustomerCombo.SelectedValue is not int customerId)
         {
-            MessageBox.Show("Select a customer.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a customer.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         _checkingOut = true;

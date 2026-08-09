@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using Ledgerly.Server.Data;
@@ -37,7 +37,7 @@ internal static class Program
 
             DbSeeder.Seed(includeDemoData);
 
-            Console.WriteLine("Ledgerly API server (C# / .NET Framework 4.8)");
+            Console.WriteLine("Coalesce.ERP.CRM API server (C# / .NET Framework 4.8)");
             Console.WriteLine("Compatible with Windows 7 SP1 and later");
             Console.WriteLine($"Provider : {Db.Provider}");
             Console.WriteLine($"Database : {config.Describe()}");
@@ -47,7 +47,7 @@ internal static class Program
                               (CanReadConsoleInput() ? ", or Enter." : "."));
             Console.WriteLine();
             Console.WriteLine("Grow later with:");
-            Console.WriteLine("  Ledgerly.Server.exe migrate --connection \"Server=.;Database=Ledgerly;Trusted_Connection=True;\"");
+            Console.WriteLine("  Coalesce.Server.exe migrate --connection \"Server=.;Database=Coalesce;Trusted_Connection=True;\"");
 
             using (WebApp.Start<Startup>(Db.ListenUrl))
             {
@@ -119,7 +119,7 @@ internal static class Program
         if (Db.Provider == DatabaseProvider.Sqlite)
             SQLitePCL.Batteries_V2.Init();
 
-        Console.WriteLine("Migrating Ledgerly data → SQL Server...");
+        Console.WriteLine("Migrating Coalesce data â†’ SQL Server...");
         Console.WriteLine($"Source : {config.Describe()}");
         Console.WriteLine($"Target : SQL Server");
         Console.WriteLine();
@@ -147,31 +147,30 @@ internal static class Program
 
     private static void PrintHelp()
     {
-        Console.WriteLine(@"Ledgerly.Server
-
+        Console.WriteLine(@"Coalesce.Server`n
 Usage:
-  Ledgerly.Server.exe
-      Start the API using %LOCALAPPDATA%\Ledgerly\Server\server.json
+  Coalesce.Server.exe
+      Start the API using %LOCALAPPDATA%\Coalesce\Server\server.json
       Fresh databases get clean system defaults only (no demo catalog).
 
-  Ledgerly.Server.exe --demo
+  Coalesce.Server.exe --demo
       Same as above, but seed sample customers, suppliers, products, and POs
       when the product catalog is empty (for demos / training).
 
-  Ledgerly.Server.exe migrate --connection ""<sql-server-connection-string>""
+  Coalesce.Server.exe migrate --connection ""<sql-server-connection-string>""
       Copy current database to an empty SQL Server database and switch config.
 
-  Ledgerly.Server.exe migrate --connection ""..."" --no-switch
+  Coalesce.Server.exe migrate --connection ""..."" --no-switch
       Copy data but leave server.json on the current provider.
 
 Examples:
-  Ledgerly.Server.exe migrate --connection ""Server=localhost;Database=Ledgerly;Trusted_Connection=True;TrustServerCertificate=True;""
-  Ledgerly.Server.exe migrate --connection ""Server=db01;Database=Ledgerly;User Id=ledgerly;Password=***;""
+  Coalesce.Server.exe migrate --connection ""Server=localhost;Database=Coalesce;Trusted_Connection=True;TrustServerCertificate=True;""
+  Coalesce.Server.exe migrate --connection ""Server=db01;Database=Coalesce;User Id=coalesce;Password=***;""
 
 Notes:
   - Create an empty SQL Server database first (or allow the login to create it).
-  - Target must not already contain Ledgerly data.
-  - App code does not change — only the database provider in server.json.
+  - Target must not already contain Coalesce data.
+  - App code does not change â€” only the database provider in server.json.
 ");
     }
 
@@ -191,3 +190,5 @@ Notes:
         return null;
     }
 }
+
+

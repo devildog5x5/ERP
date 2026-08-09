@@ -174,6 +174,57 @@ public sealed class ApiClient : IDisposable
         PutAsync<SalesOrderDto>($"api/sales-orders/{id}", dto);
     public Task DeleteSalesOrderAsync(int id) => DeleteAsync($"api/sales-orders/{id}");
 
+    // --- CRM ---
+    public Task<List<CrmLeadDto>?> GetCrmLeadsAsync() => GetAsync<List<CrmLeadDto>>("api/crm/leads");
+    public Task<CrmLeadDto?> CreateCrmLeadAsync(CrmLeadDto dto) => PostAsync<CrmLeadDto>("api/crm/leads", dto);
+    public Task<CrmLeadDto?> UpdateCrmLeadAsync(int id, CrmLeadDto dto) => PutAsync<CrmLeadDto>($"api/crm/leads/{id}", dto);
+    public Task DeleteCrmLeadAsync(int id) => DeleteAsync($"api/crm/leads/{id}");
+    public async Task ConvertCrmLeadAsync(int id, bool createCustomer = true)
+    {
+        var content = new StringContent(
+            JsonConvert.SerializeObject(new CrmLeadConvertDto { CreateCustomer = createCustomer }),
+            Encoding.UTF8, "application/json");
+        using var req = Request(HttpMethod.Post, $"api/crm/leads/{id}/convert", content);
+        using var res = await _http.SendAsync(req);
+        await EnsureSuccessAsync(res);
+    }
+
+    public Task<List<CrmAccountDto>?> GetCrmAccountsAsync() => GetAsync<List<CrmAccountDto>>("api/crm/accounts");
+    public Task<CrmAccountDto?> CreateCrmAccountAsync(CrmAccountDto dto) => PostAsync<CrmAccountDto>("api/crm/accounts", dto);
+    public Task<CrmAccountDto?> UpdateCrmAccountAsync(int id, CrmAccountDto dto) => PutAsync<CrmAccountDto>($"api/crm/accounts/{id}", dto);
+    public Task DeleteCrmAccountAsync(int id) => DeleteAsync($"api/crm/accounts/{id}");
+    public Task<CrmAccountDto?> LinkCrmAccountCustomerAsync(int id) =>
+        PostAsync<CrmAccountDto>($"api/crm/accounts/{id}/link-customer", new { });
+
+    public Task<List<CrmContactDto>?> GetCrmContactsAsync(int? accountId = null) =>
+        GetAsync<List<CrmContactDto>>(accountId is int a ? $"api/crm/contacts?accountId={a}" : "api/crm/contacts");
+    public Task<CrmContactDto?> CreateCrmContactAsync(CrmContactDto dto) => PostAsync<CrmContactDto>("api/crm/contacts", dto);
+    public Task<CrmContactDto?> UpdateCrmContactAsync(int id, CrmContactDto dto) => PutAsync<CrmContactDto>($"api/crm/contacts/{id}", dto);
+    public Task DeleteCrmContactAsync(int id) => DeleteAsync($"api/crm/contacts/{id}");
+
+    public Task<List<CrmOpportunityDto>?> GetCrmOpportunitiesAsync(string? stage = null) =>
+        GetAsync<List<CrmOpportunityDto>>(string.IsNullOrWhiteSpace(stage) ? "api/crm/opportunities" : $"api/crm/opportunities?stage={Uri.EscapeDataString(stage!)}");
+    public Task<CrmOpportunityDto?> CreateCrmOpportunityAsync(CrmOpportunityDto dto) => PostAsync<CrmOpportunityDto>("api/crm/opportunities", dto);
+    public Task<CrmOpportunityDto?> UpdateCrmOpportunityAsync(int id, CrmOpportunityDto dto) => PutAsync<CrmOpportunityDto>($"api/crm/opportunities/{id}", dto);
+    public Task DeleteCrmOpportunityAsync(int id) => DeleteAsync($"api/crm/opportunities/{id}");
+    public Task<CrmOpportunityDto?> WinCrmOpportunityAsync(int id, string documentType = "quote") =>
+        PostAsync<CrmOpportunityDto>($"api/crm/opportunities/{id}/win", new CrmOpportunityWinDto { DocumentType = documentType });
+
+    public Task<List<CrmActivityDto>?> GetCrmActivitiesAsync(string? status = null) =>
+        GetAsync<List<CrmActivityDto>>(string.IsNullOrWhiteSpace(status) ? "api/crm/activities" : $"api/crm/activities?status={Uri.EscapeDataString(status!)}");
+    public Task<CrmActivityDto?> CreateCrmActivityAsync(CrmActivityDto dto) => PostAsync<CrmActivityDto>("api/crm/activities", dto);
+    public Task<CrmActivityDto?> UpdateCrmActivityAsync(int id, CrmActivityDto dto) => PutAsync<CrmActivityDto>($"api/crm/activities/{id}", dto);
+    public Task DeleteCrmActivityAsync(int id) => DeleteAsync($"api/crm/activities/{id}");
+
+    public Task<List<CrmNoteDto>?> GetCrmNotesAsync(int? accountId = null) =>
+        GetAsync<List<CrmNoteDto>>(accountId is int a ? $"api/crm/notes?accountId={a}" : "api/crm/notes");
+    public Task<CrmNoteDto?> CreateCrmNoteAsync(CrmNoteDto dto) => PostAsync<CrmNoteDto>("api/crm/notes", dto);
+
+    public Task<List<CrmCommunicationDto>?> GetCrmCommunicationsAsync(int? accountId = null) =>
+        GetAsync<List<CrmCommunicationDto>>(accountId is int a ? $"api/crm/communications?accountId={a}" : "api/crm/communications");
+    public Task<CrmCommunicationDto?> CreateCrmCommunicationAsync(CrmCommunicationDto dto) =>
+        PostAsync<CrmCommunicationDto>("api/crm/communications", dto);
+
     public Task<ReminderDto?> CreateReminderAsync(ReminderCreateDto dto) => PostAsync<ReminderDto>("api/reminders", dto);
     public Task<ReminderDto?> UpdateReminderAsync(int id, ReminderCreateDto dto) => PutAsync<ReminderDto>($"api/reminders/{id}", dto);
     public Task DeleteReminderAsync(int id) => DeleteAsync($"api/reminders/{id}");

@@ -46,6 +46,13 @@ public class ErpDbContext : DbContext
     public DbSet<WebhookSubscription> Webhooks { get; set; } = null!;
     public DbSet<IntegrationLog> IntegrationLogs { get; set; } = null!;
     public DbSet<NumberSequence> NumberSequences { get; set; } = null!;
+    public DbSet<CrmLead> CrmLeads { get; set; } = null!;
+    public DbSet<CrmAccount> CrmAccounts { get; set; } = null!;
+    public DbSet<CrmContact> CrmContacts { get; set; } = null!;
+    public DbSet<CrmOpportunity> CrmOpportunities { get; set; } = null!;
+    public DbSet<CrmActivity> CrmActivities { get; set; } = null!;
+    public DbSet<CrmNote> CrmNotes { get; set; } = null!;
+    public DbSet<CrmCommunicationLog> CrmCommunications { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,6 +68,7 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<CompanySettings>().ToTable("CompanySettings");
         modelBuilder.Entity<StockMovement>().ToTable("StockMovements");
         modelBuilder.Entity<AuthToken>().HasIndex(t => t.Token).IsUnique();
+        modelBuilder.Entity<CrmCommunicationLog>().ToTable("CrmCommunications");
 
         // Generous string sizes for SQL Server (SQLite stores these as TEXT anyway).
         modelBuilder.Entity<Supplier>(e =>

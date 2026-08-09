@@ -1,6 +1,6 @@
-# Ledgerly ERP (C#)
+# Coalesce.ERP.CRM (C#)
 
-Windows client/server ERP for small businesses: inventory, purchasing, sales, suppliers/customers, and operational reminders for stock and buying.
+Windows client/server **ERP + CRM** for small businesses: inventory, purchasing, sales, suppliers/customers, CRM pipeline (leads, accounts, contacts, opportunities, activities), and operational reminders for stock and buying.
 
 **Runs on Windows 7 SP1 through current Windows** (7 / 8.1 / 10 / 11 and newer).
 
@@ -12,16 +12,16 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined** | Same chooser installer (default: Client + Server) | [LedgerlySetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.5.3/LedgerlySetup.exe) |
-| **Client package** | Same chooser installer (default: Client only) | [LedgerlyClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.5.3/LedgerlyClientSetup.exe) |
-| **Server package** | Same chooser installer (default: Server only) | [LedgerlyServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.5.3/LedgerlyServerSetup.exe) |
+| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.0/CoalesceSetup.exe) |
+| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.0/CoalesceClientSetup.exe) |
+| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.0/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.5.3](https://github.com/devildog5x5/ERP/releases/tag/v1.5.3)
+- Latest release: [v1.6.0](https://github.com/devildog5x5/ERP/releases/tag/v1.6.0)
 - Every installer asks up front — loudly — whether to install **Client**, **Server**, or **Both**.
 - Default login after install: `admin` / `admin`
 - Server listens at `http://127.0.0.1:8000` by default
 - Requires **64-bit Windows** and **[.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48)**
-- Rebuild locally: `powershell -File .\build_installers.ps1` → `installers\LedgerlySetup.exe`, `LedgerlyClientSetup.exe`, `LedgerlyServerSetup.exe`
+- Rebuild locally: `powershell -File .\build_installers.ps1` → `installers\CoalesceSetup.exe`, `CoalesceClientSetup.exe`, `CoalesceServerSetup.exe`
 
 ## Requirements
 
@@ -35,10 +35,24 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 ## Architecture
 
 ```
-src/Ledgerly.Client   WPF desktop client (.NET Framework 4.8)
-src/Ledgerly.Server   OWIN self-hosted Web API + EF Core 3.1 (SQLite or SQL Server)
+src/Ledgerly.Client   WPF desktop client → Coalesce.Client.exe
+src/Ledgerly.Server   OWIN self-hosted Web API + EF Core 3.1 → Coalesce.Server.exe
 src/Ledgerly.Shared   Shared DTOs
 ```
+
+App data lives under `%LOCALAPPDATA%\Coalesce\` (Server / Client / Backups). Prior Ledgerly AppData is migrated automatically on first run.
+
+## CRM (complements ERP)
+
+| Area | Purpose |
+|------|---------|
+| **Leads** | Prospects; convert → CRM account + ERP customer |
+| **Accounts** | Relationship wrapper; optional link to ERP Customer |
+| **Contacts** | People at accounts |
+| **Pipeline** | Opportunities by stage; **Win** creates a sales quote |
+| **Activities** | Calls / meetings / tasks (separate from ops Reminders) |
+
+ERP **Customers**, **Sales**, **Purchasing**, **Inventory**, and **Finance** remain the transactional source of truth.
 
 ## Run (development)
 
@@ -50,60 +64,29 @@ cd C:\Users\rober\Documents\GitHub\ERP
 # Terminal 1 — API server (http://127.0.0.1:8000)
 dotnet run --project src/Ledgerly.Server
 
-# Terminal 2 — WPF client
+# Terminal 2 — desktop client
 dotnet run --project src/Ledgerly.Client
 ```
 
-- Default database: SQLite at `%LOCALAPPDATA%\Ledgerly\Server\ledgerly.db`
-- Server config: `%LOCALAPPDATA%\Ledgerly\Server\server.json` (provider, connection string, listen URL)
-
-## Why .NET Framework 4.8
-
-| Runtime | Windows 7 | Windows 10/11 |
-|---------|-----------|----------------|
-| .NET 8 / 10 | No | Yes |
-| **.NET Framework 4.8** | **Yes (SP1)** | **Yes** |
-
-For “Windows 7 forward”, Framework 4.8 is the supported Microsoft stack. The server uses OWIN self-host (not ASP.NET Core) for the same reason.
-
-## Features
-
-- **Auth**: users, roles, permissions, login (`admin` / `admin`)
-- **Audit log**, backups/restore (SQLite), API keys, webhooks
-- Inventory with UPC/barcode, average costing, margins
-- Multi-location warehouse, transfers, cycle counts, BOM/kits
-- Scan station (lookup / stock adjust / PO receive / quick sale)
-- Purchasing with approval threshold, print PO, vendor bills/AP
-- Sales quotes→orders→invoice, payments/AR, RMA returns, print/email
-- Tax codes, price lists, multi-currency rates, multi-company
-- Finance: chart of accounts, journals, bank reconcile, period close
-- Reports: margin, AR/AP aging, dead stock
-- Integrations stubs: Shopify sync, accounting CSV export, shipping tracking
-- SMTP settings for document email
-- **Scale-up path** SQLite → SQL Server (same app)
-
-## Scale-up / migrate to SQL Server
-
-Ledgerly starts on **SQLite** (zero install, great for one shop). When you need more concurrent users or a shared server database, migrate in one step — **no rewrite of the client or API**.
-
-1. Install SQL Server (Express is fine) and create an empty database, e.g. `Ledgerly`.
-2. Stop the Ledgerly server.
-3. Run:
+Optional demo catalog (sample products/partners):
 
 ```powershell
-dotnet run --project src/Ledgerly.Server -- migrate --connection "Server=localhost;Database=Ledgerly;Trusted_Connection=True;TrustServerCertificate=True;"
+dotnet run --project src/Ledgerly.Server -- --demo
 ```
 
-Or against a built exe:
+## Installers
 
 ```powershell
-.\Ledgerly.Server.exe migrate --connection "Server=db01;Database=Ledgerly;Trusted_Connection=True;TrustServerCertificate=True;"
+powershell -File .\build_installers.ps1
 ```
 
-4. Start the server again. It reads `server.json` and uses SQL Server automatically.
-5. Keep the old SQLite file as a backup until you verify counts in Settings → Database platform.
+Produces Combined / Client / Server setups under `installers\`.
 
-Optional: `--no-switch` copies data but leaves the active provider on SQLite.
+## Default credentials
 
-The health API reports `databaseProvider`, `database`, and `canScaleOut` so the client Settings page can show the current platform.  
+- Username: `admin`
+- Password: `admin`
 
+## License
+
+See repository for license terms.

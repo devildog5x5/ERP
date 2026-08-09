@@ -177,7 +177,7 @@ public class StockMovement
 public class CompanySettings
 {
     public int Id { get; set; } = 1;
-    public string CompanyName { get; set; } = "Ledgerly";
+    public string CompanyName { get; set; } = "Coalesce.ERP.CRM";
     public decimal DefaultTaxRate { get; set; }
     public string Currency { get; set; } = "USD";
     public string? ReceiptFooter { get; set; }
@@ -517,4 +517,109 @@ public class NumberSequence
     public string DocumentType { get; set; } = "";
     public string Prefix { get; set; } = "";
     public int NextValue { get; set; } = 1;
+}
+
+// --- CRM (complements ERP Customers / SalesOrders) ---
+
+public class CrmLead
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string? CompanyName { get; set; }
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? Source { get; set; }
+    public string Status { get; set; } = "new"; // new|working|qualified|disqualified|converted
+    public int? OwnerUserId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public int? ConvertedAccountId { get; set; }
+    public int? ConvertedCustomerId { get; set; }
+}
+
+public class CrmAccount
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public int? CustomerId { get; set; }
+    public Customer? Customer { get; set; }
+    public string? Industry { get; set; }
+    public string? Website { get; set; }
+    public string? BillingEmail { get; set; }
+    public bool IsActive { get; set; } = true;
+    public int? OwnerUserId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class CrmContact
+{
+    public int Id { get; set; }
+    public int? AccountId { get; set; }
+    public CrmAccount? Account { get; set; }
+    public int? LeadId { get; set; }
+    public string FirstName { get; set; } = "";
+    public string? LastName { get; set; }
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? Title { get; set; }
+    public bool IsPrimary { get; set; }
+    public bool IsActive { get; set; } = true;
+}
+
+public class CrmOpportunity
+{
+    public int Id { get; set; }
+    public int AccountId { get; set; }
+    public CrmAccount Account { get; set; } = null!;
+    public int? PrimaryContactId { get; set; }
+    public string Name { get; set; } = "";
+    public string Stage { get; set; } = "prospecting"; // prospecting|qualified|proposal|negotiation|won|lost
+    public decimal? Amount { get; set; }
+    public DateTime? ExpectedClose { get; set; }
+    public int? OwnerUserId { get; set; }
+    public int? SalesOrderId { get; set; }
+    public string? LostReason { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class CrmActivity
+{
+    public int Id { get; set; }
+    public string ActivityType { get; set; } = "task"; // call|meeting|email|task
+    public string Subject { get; set; } = "";
+    public string? Body { get; set; }
+    public string Status { get; set; } = "open"; // open|done|cancelled
+    public DateTime? DueAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public int? OwnerUserId { get; set; }
+    public int? AccountId { get; set; }
+    public int? ContactId { get; set; }
+    public int? LeadId { get; set; }
+    public int? OpportunityId { get; set; }
+}
+
+public class CrmNote
+{
+    public int Id { get; set; }
+    public string Body { get; set; } = "";
+    public int? AuthorUserId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public int? AccountId { get; set; }
+    public int? ContactId { get; set; }
+    public int? LeadId { get; set; }
+    public int? OpportunityId { get; set; }
+}
+
+public class CrmCommunicationLog
+{
+    public int Id { get; set; }
+    public string Channel { get; set; } = "other"; // phone|email|meeting|other
+    public string Direction { get; set; } = "outbound"; // inbound|outbound
+    public string? Subject { get; set; }
+    public string Summary { get; set; } = "";
+    public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
+    public int? UserId { get; set; }
+    public int? AccountId { get; set; }
+    public int? ContactId { get; set; }
+    public int? LeadId { get; set; }
+    public int? OpportunityId { get; set; }
 }

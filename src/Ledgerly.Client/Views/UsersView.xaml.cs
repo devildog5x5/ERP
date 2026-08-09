@@ -59,7 +59,7 @@ public partial class UsersView : UserControl
         }
         if (Grid.SelectedItem is not UserDto selected)
         {
-            MessageBox.Show("Select a user first.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a user first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -69,7 +69,7 @@ public partial class UsersView : UserControl
         if (string.IsNullOrWhiteSpace(password)) return;
         if (password.Trim().Length < 4)
         {
-            MessageBox.Show("Password must be at least 4 characters.", "Ledgerly",
+            MessageBox.Show("Password must be at least 4 characters.", "Coalesce.ERP.CRM",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -77,7 +77,7 @@ public partial class UsersView : UserControl
         try
         {
             await App.Api.ResetPasswordAsync(selected.Id, new ResetPasswordDto { NewPassword = password.Trim() });
-            MessageBox.Show($"Password reset for {selected.UserName}.", "Ledgerly",
+            MessageBox.Show($"Password reset for {selected.UserName}.", "Coalesce.ERP.CRM",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }
@@ -96,12 +96,12 @@ public partial class UsersView : UserControl
         }
         if (Grid.SelectedItem is not UserDto selected)
         {
-            MessageBox.Show("Select a user first.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a user first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         if (Session.Current != null && Session.Current.UserId == selected.Id)
         {
-            MessageBox.Show("You cannot delete your own account while signed in.", "Ledgerly",
+            MessageBox.Show("You cannot delete your own account while signed in.", "Coalesce.ERP.CRM",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }

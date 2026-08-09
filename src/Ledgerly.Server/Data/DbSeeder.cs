@@ -7,7 +7,7 @@ namespace Ledgerly.Server.Data;
 public static class DbSeeder
 {
     public const string AllPermissions =
-        "dashboard,inventory,purchasing,sales,partners,reminders,scan,settings,users,audit,locations,warehouse,finance,reports,integrations,approvals,backup,print";
+        "dashboard,inventory,purchasing,sales,partners,crm,reminders,scan,settings,users,audit,locations,warehouse,finance,reports,integrations,approvals,backup,print";
 
     /// <summary>
     /// Apply schema + system defaults. Demo catalog data is optional (off by default)
@@ -127,8 +127,8 @@ public static class DbSeeder
         {
             db.Roles.AddRange(
                 new Role { Name = "Administrator", Permissions = AllPermissions },
-                new Role { Name = "Manager", Permissions = "dashboard,inventory,purchasing,sales,partners,reminders,scan,reports,approvals,print,warehouse,locations" },
-                new Role { Name = "Clerk", Permissions = "dashboard,inventory,sales,partners,scan,print" },
+                new Role { Name = "Manager", Permissions = "dashboard,inventory,purchasing,sales,partners,crm,reminders,scan,reports,approvals,print,warehouse,locations" },
+                new Role { Name = "Clerk", Permissions = "dashboard,inventory,sales,partners,crm,scan,print" },
                 new Role { Name = "Warehouse", Permissions = "dashboard,inventory,scan,warehouse,locations,purchasing" },
                 new Role { Name = "Accountant", Permissions = "dashboard,finance,reports,sales,purchasing,partners,print,backup" });
             db.SaveChanges();
@@ -150,6 +150,25 @@ public static class DbSeeder
             var adminRole = db.Roles.FirstOrDefault(r => r.Name == "Administrator");
             if (adminRole != null && !string.Equals(adminRole.Permissions, AllPermissions, StringComparison.Ordinal))
                 adminRole.Permissions = AllPermissions;
+
+            // Ensure CRM permission is present for roles that already manage partners/sales.
+            foreach (var role in db.Roles.ToList())
+            {
+                var parts = (role.Permissions ?? "")
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Trim())
+                    .Where(p => p.Length > 0)
+                    .ToList();
+                if (parts.Any(p => p.Equals("crm", StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                if (parts.Any(p => p.Equals("partners", StringComparison.OrdinalIgnoreCase)
+                                || p.Equals("sales", StringComparison.OrdinalIgnoreCase)
+                                || role.Name == "Administrator"))
+                {
+                    parts.Add("crm");
+                    role.Permissions = string.Join(",", parts);
+                }
+            }
             db.SaveChanges();
         }
 

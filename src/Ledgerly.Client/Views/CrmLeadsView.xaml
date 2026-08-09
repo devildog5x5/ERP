@@ -1,0 +1,25 @@
+<UserControl x:Class="Ledgerly.Client.Views.CrmLeadsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:svc="clr-namespace:Ledgerly.Client.Services">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
+            <Button Content="Add lead" Style="{StaticResource PrimaryButton}" Click="Add_Click" Margin="0,0,8,0" svc:Access.Permission="crm"/>
+            <Button Content="Edit" Style="{StaticResource SecondaryButton}" Click="Edit_Click" Margin="0,0,8,0" svc:Access.Permission="crm"/>
+            <Button Content="Convert to account" Style="{StaticResource SecondaryButton}" Click="Convert_Click" Margin="0,0,8,0" svc:Access.Permission="crm"/>
+            <Button Content="Delete" Style="{StaticResource DangerButton}" Click="Delete_Click" svc:Access.Permission="crm"/>
+        </StackPanel>
+        <DataGrid x:Name="Grid" AutoGenerateColumns="False" IsReadOnly="True"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                  BorderThickness="0" CanUserAddRows="False" RowHeight="38" SelectionMode="Single">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="160"/>
+                <DataGridTextColumn Header="Company" Binding="{Binding CompanyName}" Width="160"/>
+                <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="180"/>
+                <DataGridTextColumn Header="Phone" Binding="{Binding Phone}" Width="120"/>
+                <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="100"/>
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

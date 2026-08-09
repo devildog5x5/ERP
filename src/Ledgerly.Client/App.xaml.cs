@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -41,8 +41,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             MessageBox.Show(
-                "Ledgerly failed to start.\n\n" + ex.Message,
-                "Ledgerly",
+                "Ledgerly failed to start.\n\n" + ex.Message, "Coalesce.ERP.CRM",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             Shutdown(1);
@@ -52,8 +51,7 @@ public partial class App : Application
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         MessageBox.Show(
-            "An unexpected error occurred.\n\n" + e.Exception.Message,
-            "Ledgerly",
+            "An unexpected error occurred.\n\n" + e.Exception.Message, "Coalesce.ERP.CRM",
             MessageBoxButton.OK,
             MessageBoxImage.Error);
         e.Handled = true;
@@ -63,8 +61,7 @@ public partial class App : Application
     {
         var msg = e.ExceptionObject is Exception ex ? ex.Message : e.ExceptionObject?.ToString();
         MessageBox.Show(
-            "A fatal error occurred.\n\n" + msg,
-            "Ledgerly",
+            "A fatal error occurred.\n\n" + msg, "Coalesce.ERP.CRM",
             MessageBoxButton.OK,
             MessageBoxImage.Error);
     }
@@ -78,8 +75,7 @@ public partial class App : Application
             Current?.Dispatcher.BeginInvoke(new Action(() =>
             {
                 MessageBox.Show(
-                    "A background error occurred.\n\n" + detail,
-                    "Ledgerly",
+                    "A background error occurred.\n\n" + detail, "Coalesce.ERP.CRM",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }));
@@ -91,8 +87,7 @@ public partial class App : Application
     public static bool PromptRelogin(string? message = null)
     {
         MessageBox.Show(
-            message ?? "Your session expired. Please sign in again.",
-            "Ledgerly",
+            message ?? "Your session expired. Please sign in again.", "Coalesce.ERP.CRM",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
 

@@ -51,7 +51,7 @@ public partial class PurchaseOrdersView : UserControl
                 PurchaseOrderId = selected.Id,
                 Amount = selected.Total
             });
-            MessageBox.Show("Vendor bill created.", "Ledgerly");
+            MessageBox.Show("Vendor bill created.", "Coalesce.ERP.CRM");
         }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }
         finally { if (sender is UIElement b) b.IsEnabled = true; }
@@ -75,7 +75,7 @@ public partial class PurchaseOrdersView : UserControl
     {
         if (Grid.SelectedItem is not PurchaseOrderDto selected)
         {
-            MessageBox.Show("Select a purchase order first.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a purchase order first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         try
@@ -100,7 +100,7 @@ public partial class PurchaseOrdersView : UserControl
     {
         if (Grid.SelectedItem is not PurchaseOrderDto selected)
         {
-            MessageBox.Show("Select a purchase order first.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a purchase order first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         try

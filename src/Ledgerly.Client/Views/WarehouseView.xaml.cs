@@ -100,7 +100,7 @@ public partial class WarehouseView : UserControl
             if (qty is null or <= 0) return;
             await App.Api.BuildBomAsync(new BomBuildDto { BomId = bom.Id, Quantity = qty.Value });
             await LoadAsync();
-            MessageBox.Show("Kit built.", "Ledgerly");
+            MessageBox.Show("Kit built.", "Coalesce.ERP.CRM");
         }
         catch (Exception ex) { EntityDialogs.ShowError(ex); }
     }

@@ -62,7 +62,7 @@ public partial class InventoryView : UserControl
     {
         if (Grid.SelectedItem is not ProductDto selected)
         {
-            MessageBox.Show("Select a product first.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a product first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         try
@@ -92,7 +92,7 @@ public partial class InventoryView : UserControl
     {
         if (Grid.SelectedItem is not ProductDto selected)
         {
-            MessageBox.Show("Select a product first.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a product first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         var delta = EntityDialogs.PromptDecimal(OwnerWindow, "Adjust stock",

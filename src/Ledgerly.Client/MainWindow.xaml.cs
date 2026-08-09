@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -49,6 +49,7 @@ public partial class MainWindow : Window
         SetHeaderVisible(NavOverviewHeader, "dashboard", "scan", "reports", "reminders");
         SetHeaderVisible(NavOperationsHeader, "inventory", "warehouse", "purchasing", "sales");
         SetHeaderVisible(NavDirectoryHeader, "partners");
+        SetHeaderVisible(NavCrmHeader, "crm");
         SetHeaderVisible(NavFinanceHeader, "finance");
         SetHeaderVisible(NavSystemHeader, "integrations", "settings");
         // SECURITY always has at least "Change password".
@@ -65,11 +66,21 @@ public partial class MainWindow : Window
         foreach (var page in new[]
                  {
                      "dashboard", "scan", "inventory", "sales", "purchasing", "warehouse",
-                     "partners", "reminders", "reports", "finance", "users", "integrations", "settings"
+                     "partners", "crm", "reminders", "reports", "finance", "users", "integrations", "settings"
                  })
         {
-            if (Session.Can(Access.PermissionForPage(page == "partners" ? "suppliers" : page)))
-                return page == "partners" ? "suppliers" : page;
+            if (page == "partners")
+            {
+                if (Session.Can("partners")) return "suppliers";
+                continue;
+            }
+            if (page == "crm")
+            {
+                if (Session.Can("crm")) return "crm-pipeline";
+                continue;
+            }
+            if (Session.Can(Access.PermissionForPage(page)))
+                return page;
         }
         return null;
     }
@@ -88,12 +99,12 @@ public partial class MainWindow : Window
         try
         {
             await App.Api.RunRemindersAsync();
-            MessageBox.Show("Reminder scan complete.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Reminder scan complete.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
             await NavigateAsync(_page);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Could not run reminders.\n{ex.Message}", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show($"Could not run reminders.\n{ex.Message}", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -156,6 +167,26 @@ public partial class MainWindow : Window
                 case "customers":
                     SetHeader("DIRECTORY", "Customers", "Customer records for sales orders.");
                     content = await PartnersView.CreateAsync(suppliers: false);
+                    break;
+                case "crm-pipeline":
+                    SetHeader("CRM", "Pipeline", "Opportunities by stage. Win creates a sales quote linked to the ERP customer.");
+                    content = await CrmPipelineView.CreateAsync();
+                    break;
+                case "crm-leads":
+                    SetHeader("CRM", "Leads", "Inbound prospects. Convert a lead into a CRM account and ERP customer.");
+                    content = await CrmLeadsView.CreateAsync();
+                    break;
+                case "crm-accounts":
+                    SetHeader("CRM", "Accounts", "Relationship accounts that link to ERP customers for sales and finance.");
+                    content = await CrmAccountsView.CreateAsync();
+                    break;
+                case "crm-contacts":
+                    SetHeader("CRM", "Contacts", "People at your CRM accounts.");
+                    content = await CrmContactsView.CreateAsync();
+                    break;
+                case "crm-activities":
+                    SetHeader("CRM", "Activities", "Calls, meetings, emails, and follow-up tasks (separate from ops reminders).");
+                    content = await CrmActivitiesView.CreateAsync();
                     break;
                 case "reminders":
                     SetHeader("OVERVIEW", "Reminders & alerts", "Low stock, suggested buys, and overdue deliveries.");

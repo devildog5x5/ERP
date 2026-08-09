@@ -37,7 +37,7 @@ public static class EntityDialogs
 
         if (string.IsNullOrWhiteSpace(sku.Text) || string.IsNullOrWhiteSpace(name.Text))
         {
-            MessageBox.Show("SKU and name are required.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("SKU and name are required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -70,7 +70,7 @@ public static class EntityDialogs
 
         if (string.IsNullOrWhiteSpace(name.Text))
         {
-            MessageBox.Show("Name is required.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Name is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -99,7 +99,7 @@ public static class EntityDialogs
 
         if (string.IsNullOrWhiteSpace(title.Text))
         {
-            MessageBox.Show("Title is required.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Title is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -117,7 +117,7 @@ public static class EntityDialogs
     {
         if (suppliers.Count == 0 || products.Count == 0)
         {
-            MessageBox.Show("Add at least one supplier and one product first.", "Ledgerly",
+            MessageBox.Show("Add at least one supplier and one product first.", "Coalesce.ERP.CRM",
                 MessageBoxButton.OK, MessageBoxImage.Information);
             return null;
         }
@@ -179,7 +179,7 @@ public static class EntityDialogs
 
         if (lines.Count == 0)
         {
-            MessageBox.Show("Add at least one line.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Add at least one line.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -205,7 +205,7 @@ public static class EntityDialogs
     {
         if (customers.Count == 0 || products.Count == 0)
         {
-            MessageBox.Show("Add at least one customer and one product first.", "Ledgerly",
+            MessageBox.Show("Add at least one customer and one product first.", "Coalesce.ERP.CRM",
                 MessageBoxButton.OK, MessageBoxImage.Information);
             return null;
         }
@@ -284,7 +284,7 @@ public static class EntityDialogs
 
         if (lines.Count == 0)
         {
-            MessageBox.Show("Add at least one line.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Add at least one line.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -324,7 +324,7 @@ public static class EntityDialogs
         var remaining = po.Lines.Where(l => l.QuantityOrdered > l.QuantityReceived).ToList();
         if (remaining.Count == 0)
         {
-            MessageBox.Show("Nothing left to receive on this PO.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Nothing left to receive on this PO.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
             return null;
         }
 
@@ -483,6 +483,196 @@ public static class EntityDialogs
         return dialog.ShowDialog() == true;
     }
 
+    public static CrmLeadDto? EditCrmLead(Window owner, CrmLeadDto? existing)
+    {
+        var name = Field(existing?.Name ?? "");
+        var company = Field(existing?.CompanyName ?? "");
+        var email = Field(existing?.Email ?? "");
+        var phone = Field(existing?.Phone ?? "");
+        var source = Field(existing?.Source ?? "");
+        var statusItems = new[] { "new", "working", "qualified", "disqualified", "converted" }
+            .Select((s, i) => new ComboItem(i + 1, s)).ToList();
+        var statusIdx = Math.Max(0, Array.IndexOf(new[] { "new", "working", "qualified", "disqualified", "converted" }, existing?.Status ?? "new"));
+        var status = Combo(statusItems, statusIdx + 1);
+
+        if (!Show(owner, existing is null ? "Add lead" : "Edit lead", 440,
+                Row("Name", name), Row("Company", company), Row("Email", email),
+                Row("Phone", phone), Row("Source", source), Row("Status", status)))
+            return null;
+        if (string.IsNullOrWhiteSpace(name.Text))
+        {
+            MessageBox.Show("Name is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+        return new CrmLeadDto
+        {
+            Id = existing?.Id ?? 0,
+            Name = name.Text.Trim(),
+            CompanyName = NullIfEmpty(company.Text),
+            Email = NullIfEmpty(email.Text),
+            Phone = NullIfEmpty(phone.Text),
+            Source = NullIfEmpty(source.Text),
+            Status = SelectedLabel(status) ?? "new",
+            OwnerUserId = existing?.OwnerUserId
+        };
+    }
+
+    public static CrmAccountDto? EditCrmAccount(Window owner, CrmAccountDto? existing, IList<PartnerDto> customers)
+    {
+        var name = Field(existing?.Name ?? "");
+        var industry = Field(existing?.Industry ?? "");
+        var website = Field(existing?.Website ?? "");
+        var email = Field(existing?.BillingEmail ?? "");
+        var custItems = new List<ComboItem> { new ComboItem(0, "(none — link later)") };
+        custItems.AddRange(customers.Select(c => new ComboItem(c.Id, c.Name)));
+        var customer = Combo(custItems, existing?.CustomerId ?? 0);
+
+        if (!Show(owner, existing is null ? "Add CRM account" : "Edit CRM account", 460,
+                Row("Account name", name), Row("Industry", industry), Row("Website", website),
+                Row("Billing email", email), Row("ERP customer", customer)))
+            return null;
+        if (string.IsNullOrWhiteSpace(name.Text))
+        {
+            MessageBox.Show("Name is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+        return new CrmAccountDto
+        {
+            Id = existing?.Id ?? 0,
+            Name = name.Text.Trim(),
+            Industry = NullIfEmpty(industry.Text),
+            Website = NullIfEmpty(website.Text),
+            BillingEmail = NullIfEmpty(email.Text),
+            CustomerId = SelectedId(customer) is int cid && cid > 0 ? cid : null,
+            IsActive = existing?.IsActive ?? true,
+            OwnerUserId = existing?.OwnerUserId
+        };
+    }
+
+    public static CrmContactDto? EditCrmContact(Window owner, CrmContactDto? existing, IList<CrmAccountDto> accounts)
+    {
+        var first = Field(existing?.FirstName ?? "");
+        var last = Field(existing?.LastName ?? "");
+        var email = Field(existing?.Email ?? "");
+        var phone = Field(existing?.Phone ?? "");
+        var title = Field(existing?.Title ?? "");
+        var accItems = new List<ComboItem> { new ComboItem(0, "(none)") };
+        accItems.AddRange(accounts.Select(a => new ComboItem(a.Id, a.Name)));
+        var account = Combo(accItems, existing?.AccountId ?? 0);
+        var primary = new CheckBox { Content = "Primary contact", IsChecked = existing?.IsPrimary == true, Margin = new Thickness(0, 6, 0, 0) };
+
+        if (!Show(owner, existing is null ? "Add contact" : "Edit contact", 440,
+                Row("First name", first), Row("Last name", last), Row("Title", title),
+                Row("Email", email), Row("Phone", phone), Row("Account", account), primary))
+            return null;
+        if (string.IsNullOrWhiteSpace(first.Text))
+        {
+            MessageBox.Show("First name is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+        return new CrmContactDto
+        {
+            Id = existing?.Id ?? 0,
+            FirstName = first.Text.Trim(),
+            LastName = NullIfEmpty(last.Text),
+            Title = NullIfEmpty(title.Text),
+            Email = NullIfEmpty(email.Text),
+            Phone = NullIfEmpty(phone.Text),
+            AccountId = SelectedId(account) is int aid && aid > 0 ? aid : null,
+            IsPrimary = primary.IsChecked == true,
+            IsActive = existing?.IsActive ?? true
+        };
+    }
+
+    public static CrmOpportunityDto? EditCrmOpportunity(Window owner, CrmOpportunityDto? existing, IList<CrmAccountDto> accounts)
+    {
+        if (accounts.Count == 0)
+        {
+            MessageBox.Show("Create a CRM account first.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Information);
+            return null;
+        }
+        var name = Field(existing?.Name ?? "");
+        var amount = Field((existing?.Amount ?? 0).ToString(CultureInfo.InvariantCulture));
+        var close = Field(existing?.ExpectedClose?.ToString("yyyy-MM-dd") ?? "");
+        var stages = new[] { "prospecting", "qualified", "proposal", "negotiation", "won", "lost" };
+        var stageItems = stages.Select((s, i) => new ComboItem(i + 1, s)).ToList();
+        var stageIdx = Math.Max(0, Array.IndexOf(stages, existing?.Stage ?? "prospecting"));
+        var stage = Combo(stageItems, stageIdx + 1);
+        var accItems = accounts.Select(a => new ComboItem(a.Id, a.Name)).ToList();
+        var account = Combo(accItems, existing?.AccountId > 0 ? existing.AccountId : accounts[0].Id);
+
+        if (!Show(owner, existing is null ? "Add opportunity" : "Edit opportunity", 460,
+                Row("Name", name), Row("Account", account), Row("Stage", stage),
+                Row("Amount", amount), Row("Expected close (yyyy-MM-dd)", close)))
+            return null;
+        if (string.IsNullOrWhiteSpace(name.Text))
+        {
+            MessageBox.Show("Name is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+        DateTime? expected = null;
+        if (!string.IsNullOrWhiteSpace(close.Text) &&
+            DateTime.TryParse(close.Text.Trim(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+            expected = d.Date;
+
+        return new CrmOpportunityDto
+        {
+            Id = existing?.Id ?? 0,
+            Name = name.Text.Trim(),
+            AccountId = SelectedId(account) ?? accounts[0].Id,
+            Stage = SelectedLabel(stage) ?? "prospecting",
+            Amount = Dec(amount.Text),
+            ExpectedClose = expected,
+            OwnerUserId = existing?.OwnerUserId,
+            SalesOrderId = existing?.SalesOrderId,
+            LostReason = existing?.LostReason
+        };
+    }
+
+    public static CrmActivityDto? EditCrmActivity(Window owner, CrmActivityDto? existing)
+    {
+        var subject = Field(existing?.Subject ?? "");
+        var body = Field(existing?.Body ?? "");
+        var due = Field(existing?.DueAt?.ToString("yyyy-MM-dd") ?? "");
+        var types = new[] { "task", "call", "meeting", "email" };
+        var typeItems = types.Select((s, i) => new ComboItem(i + 1, s)).ToList();
+        var typeIdx = Math.Max(0, Array.IndexOf(types, existing?.ActivityType ?? "task"));
+        var type = Combo(typeItems, typeIdx + 1);
+        var statuses = new[] { "open", "done", "cancelled" };
+        var statusItems = statuses.Select((s, i) => new ComboItem(i + 1, s)).ToList();
+        var statusIdx = Math.Max(0, Array.IndexOf(statuses, existing?.Status ?? "open"));
+        var status = Combo(statusItems, statusIdx + 1);
+
+        if (!Show(owner, existing is null ? "Add activity" : "Edit activity", 440,
+                Row("Type", type), Row("Subject", subject), Row("Details", body),
+                Row("Due (yyyy-MM-dd)", due), Row("Status", status)))
+            return null;
+        if (string.IsNullOrWhiteSpace(subject.Text))
+        {
+            MessageBox.Show("Subject is required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
+        }
+        DateTime? dueAt = null;
+        if (!string.IsNullOrWhiteSpace(due.Text) &&
+            DateTime.TryParse(due.Text.Trim(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+            dueAt = d.Date;
+
+        return new CrmActivityDto
+        {
+            Id = existing?.Id ?? 0,
+            ActivityType = SelectedLabel(type) ?? "task",
+            Subject = subject.Text.Trim(),
+            Body = NullIfEmpty(body.Text),
+            Status = SelectedLabel(status) ?? "open",
+            DueAt = dueAt,
+            AccountId = existing?.AccountId,
+            ContactId = existing?.ContactId,
+            LeadId = existing?.LeadId,
+            OpportunityId = existing?.OpportunityId,
+            OwnerUserId = existing?.OwnerUserId
+        };
+    }
+
     public static decimal? PromptDecimal(Window owner, string title, string message, string defaultValue = "1")
     {
         var box = Field(defaultValue);
@@ -502,7 +692,7 @@ public static class EntityDialogs
     {
         if (roles.Count == 0)
         {
-            MessageBox.Show("No roles are defined.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("No roles are defined.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -524,7 +714,7 @@ public static class EntityDialogs
 
         if (string.IsNullOrWhiteSpace(userName.Text) || string.IsNullOrWhiteSpace(password.Text))
         {
-            MessageBox.Show("Username and password are required.", "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Username and password are required.", "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
             return null;
         }
 
@@ -555,7 +745,7 @@ public static class EntityDialogs
             App.PromptRelogin(ex.Message);
             return;
         }
-        MessageBox.Show(CleanError(ex.Message), "Ledgerly", MessageBoxButton.OK, MessageBoxImage.Warning);
+        MessageBox.Show(CleanError(ex.Message), "Coalesce.ERP.CRM", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
     private static string CleanError(string? message)
@@ -678,6 +868,9 @@ public static class EntityDialogs
 
     private static int? SelectedId(ComboBox box) =>
         box.SelectedValue as int? ?? (box.SelectedItem as ComboItem)?.Id;
+
+    private static string? SelectedLabel(ComboBox box) =>
+        (box.SelectedItem as ComboItem)?.Label;
 
     private static decimal Dec(string text) =>
         decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var d)

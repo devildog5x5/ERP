@@ -8,7 +8,7 @@ namespace Ledgerly.Server.Services;
 public static class BackupService
 {
     public static string BackupDirectory =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ledgerly", "Backups");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Coalesce", "Backups");
 
     public static Shared.BackupResultDto Backup()
     {
@@ -18,7 +18,7 @@ public static class BackupService
         {
             var src = Db.ConnectionString.Replace("Data Source=", "").Trim();
             if (!File.Exists(src)) throw new FileNotFoundException("SQLite database not found", src);
-            var dest = Path.Combine(BackupDirectory, $"ledgerly-{stamp}.db");
+            var dest = Path.Combine(BackupDirectory, $"coalesce-{stamp}.db");
             File.Copy(src, dest, overwrite: true);
             return new Shared.BackupResultDto { Path = dest, CreatedAt = DateTime.Now, Provider = "Sqlite" };
         }
@@ -43,7 +43,7 @@ public static class BackupService
         if (!File.Exists(resolved))
             throw new FileNotFoundException("Backup not found", resolved);
         if (!string.Equals(Path.GetExtension(resolved), ".db", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Only .db backups from the Ledgerly backup folder can be restored.");
+            throw new InvalidOperationException("Only .db backups from the Coalesce backup folder can be restored.");
 
         var dest = Db.ConnectionString.Replace("Data Source=", "").Trim();
         File.Copy(resolved, dest, overwrite: true);
@@ -68,7 +68,7 @@ public static class BackupService
 
         if (!candidate.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
             && !string.Equals(candidate, root, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Restore path must be inside the Ledgerly backup folder.");
+            throw new InvalidOperationException("Restore path must be inside the Coalesce backup folder.");
 
         if (candidate.Contains(".."))
             throw new InvalidOperationException("Invalid backup path.");

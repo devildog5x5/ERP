@@ -1,35 +1,33 @@
-; Ledgerly ERP installers (C# / .NET Framework 4.8)
-; Build with: ISCC /DPackage=combined|client|server installer\ledgerly.iss
-; All three packages include Client + Server payloads and open with a loud
-; Client / Server / Both chooser. Package only changes the EXE name and
-; the default selection on that page.
+﻿; Coalesce.ERP.CRM installers (C# / .NET Framework 4.8)
+; Build with: ISCC /DPackage=combined|client|server installer\coalesce.iss
 #ifndef Package
   #define Package "combined"
 #endif
 
-#define MyAppVersion "1.5.3"
-#define MyAppPublisher "Ledgerly"
+#define MyAppVersion "1.6.0"
+#define MyAppPublisher "Coalesce"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
-#define MyAppName "Ledgerly ERP"
-#define AppIdGuid "{{C9E5A1D4-6F70-4B13-9E4C-A2B1D3E5F708}"
-#define DefaultDir "{localappdata}\Programs\Ledgerly"
-#define UninstallIcon "{app}\Client\Ledgerly.Client.exe"
+#define MyAppName "Coalesce.ERP.CRM"
+#define AppIdGuid "{{D0F6B2E5-7A81-4C24-AF5D-B3C2E4F60719}"
+#define DefaultDir "{localappdata}\Programs\Coalesce"
+#define UninstallIcon "{app}\Client\Coalesce.Client.exe"
 
 #if Package == "client"
-  #define OutputName "LedgerlyClientSetup"
-  #define VersionDesc "Ledgerly ERP installer (Client / Server / Both)"
+  #define OutputName "CoalesceClientSetup"
+  #define VersionDesc "Coalesce.ERP.CRM installer (Client / Server / Both)"
   #define DefaultRole "client"
 #elif Package == "server"
-  #define OutputName "LedgerlyServerSetup"
-  #define VersionDesc "Ledgerly ERP installer (Client / Server / Both)"
+  #define OutputName "CoalesceServerSetup"
+  #define VersionDesc "Coalesce.ERP.CRM installer (Client / Server / Both)"
   #define DefaultRole "server"
 #else
-  #define OutputName "LedgerlySetup"
-  #define VersionDesc "Ledgerly ERP installer (Client / Server / Both)"
+  #define OutputName "CoalesceSetup"
+  #define VersionDesc "Coalesce.ERP.CRM installer (Client / Server / Both)"
   #define DefaultRole "both"
 #endif
 
-; Legacy AppIds from older Client-only / Server-only packages (for upgrade cleanup)
+; Prior Ledgerly AppIds (uninstall on upgrade)
+#define LegacyUnifiedAppId "{{C9E5A1D4-6F70-4B13-9E4C-A2B1D3E5F708}"
 #define LegacyClientAppId "{{A7B3C2D1-4E5F-6789-A0B1-C2D3E4F50617}"
 #define LegacyServerAppId "{{B8C4D3E2-5F60-789A-B1C2-D3E4F5061728}"
 
@@ -41,7 +39,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 DefaultDirName={#DefaultDir}
-DefaultGroupName=Ledgerly
+DefaultGroupName=Coalesce
 DisableProgramGroupPage=no
 OutputDir=..\dist\installers
 OutputBaseFilename={#OutputName}
@@ -75,34 +73,30 @@ Name: "client"; Description: "Client only"
 Name: "custom"; Description: "Custom installation"; Flags: iscustom
 
 [Components]
-Name: "server"; Description: "Ledgerly Server (API on http://127.0.0.1:8000)"; Types: full server custom; Flags: checkablealone
-Name: "client"; Description: "Ledgerly Client (WPF desktop UI)"; Types: full client custom; Flags: checkablealone
+Name: "server"; Description: "Coalesce Server (API on http://127.0.0.1:8000)"; Types: full server custom; Flags: checkablealone
+Name: "client"; Description: "Coalesce Client (WPF desktop UI)"; Types: full client custom; Flags: checkablealone
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "autostartserver"; Description: "Start Ledgerly Server when I log in"; GroupDescription: "Startup options:"; Components: server; Flags: unchecked
-Name: "autostartclient"; Description: "Start Ledgerly Client when I log in"; GroupDescription: "Startup options:"; Components: client; Flags: unchecked
+Name: "autostartserver"; Description: "Start Coalesce Server when I log in"; GroupDescription: "Startup options:"; Components: server; Flags: unchecked
+Name: "autostartclient"; Description: "Start Coalesce Client when I log in"; GroupDescription: "Startup options:"; Components: client; Flags: unchecked
 
 [Files]
-Source: "..\dist\LedgerlyServer\*"; DestDir: "{app}\Server"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: server
-Source: "..\dist\LedgerlyClient\*"; DestDir: "{app}\Client"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: client
+Source: "..\dist\CoalesceServer\*"; DestDir: "{app}\Server"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: server
+Source: "..\dist\CoalesceClient\*"; DestDir: "{app}\Client"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: client
 
 [Icons]
-Name: "{group}\Ledgerly Server"; Filename: "{app}\Server\Ledgerly.Server.exe"; WorkingDir: "{app}\Server"; Components: server
-Name: "{group}\Ledgerly Client"; Filename: "{app}\Client\Ledgerly.Client.exe"; WorkingDir: "{app}\Client"; Components: client
-Name: "{group}\Uninstall Ledgerly ERP"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\Ledgerly Server"; Filename: "{app}\Server\Ledgerly.Server.exe"; WorkingDir: "{app}\Server"; Tasks: desktopicon; Components: server
-Name: "{autodesktop}\Ledgerly Client"; Filename: "{app}\Client\Ledgerly.Client.exe"; WorkingDir: "{app}\Client"; Tasks: desktopicon; Components: client
-Name: "{userstartup}\Ledgerly Server"; Filename: "{app}\Server\Ledgerly.Server.exe"; WorkingDir: "{app}\Server"; Tasks: autostartserver; Components: server
-Name: "{userstartup}\Ledgerly Client"; Filename: "{app}\Client\Ledgerly.Client.exe"; WorkingDir: "{app}\Client"; Tasks: autostartclient; Components: client
+Name: "{group}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"; Components: server
+Name: "{group}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Components: client
+Name: "{group}\Uninstall Coalesce.ERP.CRM"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"; Tasks: desktopicon; Components: server
+Name: "{autodesktop}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Tasks: desktopicon; Components: client
+Name: "{userstartup}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"; Tasks: autostartserver; Components: server
+Name: "{userstartup}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Tasks: autostartclient; Components: client
 
 [Run]
-Filename: "{app}\Server\Ledgerly.Server.exe"; Description: "Launch Ledgerly Server now"; Flags: nowait postinstall skipifsilent unchecked; Components: server; WorkingDir: "{app}\Server"
-Filename: "{app}\Client\Ledgerly.Client.exe"; Description: "Launch Ledgerly Client now"; Flags: nowait postinstall skipifsilent unchecked; Components: client; WorkingDir: "{app}\Client"
-
-; Keep %LOCALAPPDATA%\Ledgerly\* (database, server.json, client settings) across
-; uninstall/reinstall so upgrades do not wipe company data. Use Settings → Refresh
-; database when a clean slate is wanted.
+Filename: "{app}\Server\Coalesce.Server.exe"; Description: "Launch Coalesce Server now"; Flags: nowait postinstall skipifsilent unchecked; Components: server; WorkingDir: "{app}\Server"
+Filename: "{app}\Client\Coalesce.Client.exe"; Description: "Launch Coalesce Client now"; Flags: nowait postinstall skipifsilent unchecked; Components: client; WorkingDir: "{app}\Client"
 
 [Code]
 var
@@ -132,14 +126,14 @@ begin
   GetWindowsVersionEx(Version);
   if (Version.Major < 6) or ((Version.Major = 6) and (Version.Minor < 1)) then
   begin
-    MsgBox('Ledgerly ERP requires Windows 7 SP1 or later.', mbError, MB_OK);
+    MsgBox('Coalesce.ERP.CRM requires Windows 7 SP1 or later.', mbError, MB_OK);
     Result := False;
     exit;
   end;
 
   if not IsDotNet48OrLater() then
   begin
-    MsgBox('Ledgerly ERP requires .NET Framework 4.8.'#13#10#13#10 +
+    MsgBox('Coalesce.ERP.CRM requires .NET Framework 4.8.'#13#10#13#10 +
       'Install it from:'#13#10 +
       'https://dotnet.microsoft.com/download/dotnet-framework/net48',
       mbError, MB_OK);
@@ -166,10 +160,12 @@ begin
     RegQueryStringValue(HKLM, Key, 'UninstallString', UninstallString);
 end;
 
-procedure StopLedgerlyApps();
+procedure StopApps();
 var
   ResultCode: Integer;
 begin
+  Exec('taskkill.exe', '/F /IM Coalesce.Client.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM Coalesce.Server.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec('taskkill.exe', '/F /IM Ledgerly.Client.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec('taskkill.exe', '/F /IM Ledgerly.Server.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Sleep(500);
@@ -201,7 +197,7 @@ begin
   if (UninstallerPath = '') or (not FileExists(UninstallerPath)) then
     exit;
 
-  StopLedgerlyApps();
+  StopApps();
 
   if not Exec(UninstallerPath, '/VERYSILENT /NORESTART /SUPPRESSMSGBOXES', '',
        SW_HIDE, ewWaitUntilTerminated, ResultCode) then
@@ -217,9 +213,9 @@ end;
 
 function UninstallPreviousVersions(): Boolean;
 begin
-  // Current unified package + older Client-only / Server-only AppIds
   Result :=
     UninstallByAppId('{#AppIdGuid}') and
+    UninstallByAppId('{#LegacyUnifiedAppId}') and
     UninstallByAppId('{#LegacyClientAppId}') and
     UninstallByAppId('{#LegacyServerAppId}');
 end;
@@ -228,10 +224,10 @@ function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   NeedsRestart := False;
   Result := '';
-  StopLedgerlyApps();
+  StopApps();
   if not UninstallPreviousVersions() then
-    Result := 'Could not uninstall a previous Ledgerly install. ' +
-      'Close Ledgerly completely, uninstall it from Apps & features, then run this installer again.';
+    Result := 'Could not uninstall a previous Coalesce/Ledgerly install. ' +
+      'Close the apps, uninstall from Apps & features, then run this installer again.';
 end;
 
 procedure ApplyRoleSelection();
@@ -265,11 +261,10 @@ begin
 
   RoleSubhead := TNewStaticText.Create(RolePage);
   RoleSubhead.Parent := RolePage.Surface;
-  RoleSubhead.Caption := 'Pick one option below. This is the most important step.';
+  RoleSubhead.Caption := 'Coalesce.ERP.CRM — pick one option below.';
   RoleSubhead.Font.Name := 'Segoe UI';
   RoleSubhead.Font.Size := 11;
   RoleSubhead.Font.Style := [fsBold];
-  RoleSubhead.Font.Color := clWindowText;
   RoleSubhead.AutoSize := True;
   RoleSubhead.Left := 0;
   RoleSubhead.Top := RoleHeadline.Top + RoleHeadline.Height + ScaleY(8);
@@ -290,7 +285,7 @@ begin
 
   RoleHintBoth := TNewStaticText.Create(RolePage);
   RoleHintBoth.Parent := RolePage.Surface;
-  RoleHintBoth.Caption := 'Full ERP on this PC: API/database host + desktop UI.';
+  RoleHintBoth.Caption := 'Full ERP + CRM on this PC: API/database host + desktop UI.';
   RoleHintBoth.Font.Name := 'Segoe UI';
   RoleHintBoth.Font.Size := 9;
   RoleHintBoth.Left := ScaleX(28);
@@ -314,7 +309,7 @@ begin
 
   RoleHintClient := TNewStaticText.Create(RolePage);
   RoleHintClient.Parent := RolePage.Surface;
-  RoleHintClient.Caption := 'Installs the WPF client. A Ledgerly Server must already be running somewhere.';
+  RoleHintClient.Caption := 'Installs the WPF client. A Coalesce Server must already be running somewhere.';
   RoleHintClient.Font.Name := 'Segoe UI';
   RoleHintClient.Font.Size := 9;
   RoleHintClient.Left := ScaleX(28);
@@ -346,7 +341,6 @@ begin
   RoleHintServer.Width := RolePage.SurfaceWidth - ScaleX(32);
   RoleHintServer.WordWrap := True;
 
-  // Ensure a default is selected even if preprocessor string compare fails.
   if (not RoleBoth.Checked) and (not RoleClient.Checked) and (not RoleServer.Checked) then
     RoleBoth.Checked := True;
 
@@ -355,7 +349,6 @@ end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
-  // Loud custom page replaces the stock component list.
   Result := PageID = wpSelectComponents;
 end;
 

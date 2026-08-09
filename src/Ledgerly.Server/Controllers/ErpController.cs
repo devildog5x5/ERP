@@ -802,7 +802,7 @@ public class ErpController : ApiController
     {
         var s = db.Settings.FirstOrDefault();
         if (s != null) return s;
-        s = new CompanySettings { Id = 1, CompanyName = "Ledgerly", Currency = "USD", ReceiptFooter = "Thank you for your business." };
+        s = new CompanySettings { Id = 1, CompanyName = "Coalesce.ERP.CRM", Currency = "USD", ReceiptFooter = "Thank you for your business." };
         db.Settings.Add(s);
         db.SaveChanges();
         return s;

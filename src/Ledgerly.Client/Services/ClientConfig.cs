@@ -11,12 +11,18 @@ public sealed class ClientConfig
     private static string Path =>
         System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Coalesce", "Client", "config.json");
+
+    private static string LegacyPath =>
+        System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Ledgerly", "Client", "config.json");
 
     public static ClientConfig Load()
     {
         try
         {
+            MigrateFromLegacy();
             if (File.Exists(Path))
             {
                 var cfg = JsonConvert.DeserializeObject<ClientConfig>(File.ReadAllText(Path));
@@ -36,6 +42,18 @@ public sealed class ClientConfig
         }
         catch { /* use defaults */ }
         return new ClientConfig();
+    }
+
+    private static void MigrateFromLegacy()
+    {
+        try
+        {
+            if (File.Exists(Path) || !File.Exists(LegacyPath)) return;
+            var dir = System.IO.Path.GetDirectoryName(Path)!;
+            Directory.CreateDirectory(dir);
+            File.Copy(LegacyPath, Path, overwrite: false);
+        }
+        catch { /* ignore */ }
     }
 
     public void Save()

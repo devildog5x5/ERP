@@ -17,6 +17,6 @@ When the user asks to **update the profile downloads**, **update the central dow
    ```powershell
    gh release view --repo devildog5x5/ERP --json tagName,assets,url
    ```
-   Include Combined (`LedgerlySetup.exe`), Client (`LedgerlyClientSetup.exe`), and Server (`LedgerlyServerSetup.exe`) when those assets exist.
+   Include Combined (`CoalesceSetup.exe`), Client (`CoalesceClientSetup.exe`), and Server (`CoalesceServerSetup.exe`) when those assets exist.
 
 3. Requirements: GitHub CLI authenticated (`gh auth login`). Do not invent download URLs.

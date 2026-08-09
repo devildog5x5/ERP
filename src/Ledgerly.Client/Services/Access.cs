@@ -82,6 +82,7 @@ public static class Access
     public static string PermissionForPage(string page) => page switch
     {
         "suppliers" or "customers" => "partners",
+        "crm-pipeline" or "crm-leads" or "crm-accounts" or "crm-contacts" or "crm-activities" => "crm",
         "password" => "", // any signed-in user
         "users" => "users",
         _ => page
