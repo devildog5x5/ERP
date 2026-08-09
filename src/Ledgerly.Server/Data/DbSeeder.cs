@@ -9,12 +9,25 @@ public static class DbSeeder
     public const string AllPermissions =
         "dashboard,inventory,purchasing,sales,partners,reminders,scan,settings,users,audit,locations,warehouse,finance,reports,integrations,approvals,backup,print";
 
-    public static void Seed()
+    /// <summary>
+    /// Apply schema + system defaults. Demo catalog data is optional (off by default)
+    /// so a real company can start empty.
+    /// </summary>
+    public static void Seed(bool includeDemoData = false)
     {
         using var db = Db.Create();
         SchemaMigrator.Apply(db);
         SeedEnterpriseDefaults(db);
 
+        if (includeDemoData)
+            SeedDemoCatalog(db);
+    }
+
+    /// <summary>Wipe-friendly seed used after database refresh — system scaffolding only.</summary>
+    public static void SeedClean() => Seed(includeDemoData: false);
+
+    private static void SeedDemoCatalog(ErpDbContext db)
+    {
         if (db.Products.Any())
         {
             foreach (var p in db.Products.Where(x => x.Upc == null || x.Upc == "").ToList())
@@ -28,7 +41,6 @@ public static class DbSeeder
             foreach (var p in db.Products.AsEnumerable().Where(x => x.AverageCost == 0 && x.UnitCost > 0).ToList())
                 p.AverageCost = p.UnitCost;
 
-            // Demo syrup was seeded at 0 — restock so sales orders can include it while still low.
             var syrup = db.Products.FirstOrDefault(p => p.Sku == "SYR-VAN");
             if (syrup != null && syrup.QuantityOnHand <= 0)
             {
@@ -62,7 +74,6 @@ public static class DbSeeder
             new Product { Sku = "COF-BEAN-1KG", Upc = "00012345678905", Name = "Coffee Beans 1kg", Category = "Grocery", Unit = "bag", QuantityOnHand = 4, ReorderPoint = 12, ReorderQuantity = 24, UnitCost = 8.50m, AverageCost = 8.50m, SellPrice = 14m, SupplierId = suppliers[0].Id, TaxCodeId = tax.Id },
             new Product { Sku = "CUP-12OZ", Upc = "00012345678912", Name = "Paper Cups 12oz (50pk)", Category = "Packaging", Unit = "pack", QuantityOnHand = 2, ReorderPoint = 10, ReorderQuantity = 20, UnitCost = 3.25m, AverageCost = 3.25m, SellPrice = 6.50m, SupplierId = suppliers[1].Id, TaxCodeId = tax.Id },
             new Product { Sku = "NAP-WHT", Upc = "00012345678929", Name = "White Napkins", Category = "Packaging", Unit = "pack", QuantityOnHand = 40, ReorderPoint = 15, ReorderQuantity = 30, UnitCost = 1.10m, AverageCost = 1.10m, SellPrice = 2.50m, SupplierId = suppliers[1].Id, TaxCodeId = tax.Id },
-            // Keep below reorder point for reminders, but sellable for demo sales orders.
             new Product { Sku = "SYR-VAN", Upc = "00012345678936", Name = "Vanilla Syrup", Category = "Grocery", Unit = "bottle", QuantityOnHand = 3, ReorderPoint = 6, ReorderQuantity = 12, UnitCost = 4.75m, AverageCost = 4.75m, SellPrice = 9m, SupplierId = suppliers[0].Id, TaxCodeId = tax.Id },
             new Product { Sku = "FLT-PAPER", Upc = "00012345678943", Name = "Coffee Filters", Category = "Consumables", Unit = "box", QuantityOnHand = 18, ReorderPoint = 8, ReorderQuantity = 16, UnitCost = 2m, AverageCost = 2m, SellPrice = 4.25m, SupplierId = suppliers[0].Id, TaxCodeId = tax.Id },
         };
@@ -124,7 +135,6 @@ public static class DbSeeder
         }
         else
         {
-            // User administration must stay Administrator-only — strip "users" from other roles.
             foreach (var role in db.Roles.Where(r => r.Name != "Administrator").ToList())
             {
                 var parts = (role.Permissions ?? "")
@@ -161,9 +171,7 @@ public static class DbSeeder
 
         if (!db.Locations.Any())
         {
-            db.Locations.AddRange(
-                new Location { Code = "MAIN", Name = "Main Warehouse", Bin = "A-01" },
-                new Location { Code = "FRONT", Name = "Front Counter", Bin = "F-01" });
+            db.Locations.Add(new Location { Code = "MAIN", Name = "Main Warehouse", Bin = "A-01" });
             db.SaveChanges();
             var settings = db.Settings.First();
             settings.DefaultLocationId = db.Locations.First().Id;
@@ -189,10 +197,7 @@ public static class DbSeeder
 
         if (!db.CurrencyRates.Any())
         {
-            db.CurrencyRates.AddRange(
-                new CurrencyRate { CurrencyCode = "USD", RateToBase = 1, EffectiveDate = DateTime.Today },
-                new CurrencyRate { CurrencyCode = "EUR", RateToBase = 1.08m, EffectiveDate = DateTime.Today },
-                new CurrencyRate { CurrencyCode = "CAD", RateToBase = 0.74m, EffectiveDate = DateTime.Today });
+            db.CurrencyRates.Add(new CurrencyRate { CurrencyCode = "USD", RateToBase = 1, EffectiveDate = DateTime.Today });
             db.SaveChanges();
         }
 
@@ -214,7 +219,13 @@ public static class DbSeeder
 
         if (!db.BankAccounts.Any())
         {
-            db.BankAccounts.Add(new BankAccount { Name = "Operating Checking", AccountNumber = "****1001", CurrencyCode = "USD", OpeningBalance = 10000 });
+            db.BankAccounts.Add(new BankAccount
+            {
+                Name = "Operating Checking",
+                AccountNumber = "",
+                CurrencyCode = "USD",
+                OpeningBalance = 0
+            });
             db.SaveChanges();
         }
 
@@ -234,16 +245,16 @@ public static class DbSeeder
         if (!db.NumberSequences.Any())
         {
             db.NumberSequences.AddRange(
-                new NumberSequence { DocumentType = "PO", Prefix = "PO-", NextValue = 100 },
-                new NumberSequence { DocumentType = "SO", Prefix = "SO-", NextValue = 100 },
-                new NumberSequence { DocumentType = "QT", Prefix = "QT-", NextValue = 100 },
-                new NumberSequence { DocumentType = "INV", Prefix = "INV-", NextValue = 100 },
-                new NumberSequence { DocumentType = "RMA", Prefix = "RMA-", NextValue = 100 },
-                new NumberSequence { DocumentType = "JE", Prefix = "JE-", NextValue = 100 },
-                new NumberSequence { DocumentType = "XFER", Prefix = "XF-", NextValue = 100 },
-                new NumberSequence { DocumentType = "CC", Prefix = "CC-", NextValue = 100 },
-                new NumberSequence { DocumentType = "PAY", Prefix = "PAY-", NextValue = 100 },
-                new NumberSequence { DocumentType = "BILL", Prefix = "BILL-", NextValue = 100 });
+                new NumberSequence { DocumentType = "PO", Prefix = "PO-", NextValue = 1 },
+                new NumberSequence { DocumentType = "SO", Prefix = "SO-", NextValue = 1 },
+                new NumberSequence { DocumentType = "QT", Prefix = "QT-", NextValue = 1 },
+                new NumberSequence { DocumentType = "INV", Prefix = "INV-", NextValue = 1 },
+                new NumberSequence { DocumentType = "RMA", Prefix = "RMA-", NextValue = 1 },
+                new NumberSequence { DocumentType = "JE", Prefix = "JE-", NextValue = 1 },
+                new NumberSequence { DocumentType = "XFER", Prefix = "XF-", NextValue = 1 },
+                new NumberSequence { DocumentType = "CC", Prefix = "CC-", NextValue = 1 },
+                new NumberSequence { DocumentType = "PAY", Prefix = "PAY-", NextValue = 1 },
+                new NumberSequence { DocumentType = "BILL", Prefix = "BILL-", NextValue = 1 });
             db.SaveChanges();
         }
     }

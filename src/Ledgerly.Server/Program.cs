@@ -22,10 +22,10 @@ internal static class Program
         if (args.Length > 0 && args[0].Equals("migrate", StringComparison.OrdinalIgnoreCase))
             return RunMigrate(args.Skip(1).ToArray());
 
-        return RunServer();
+        return RunServer(includeDemoData: HasFlag(args, "--demo"));
     }
 
-    private static int RunServer()
+    private static int RunServer(bool includeDemoData = false)
     {
         try
         {
@@ -35,7 +35,7 @@ internal static class Program
             if (Db.Provider == DatabaseProvider.Sqlite)
                 SQLitePCL.Batteries_V2.Init();
 
-            DbSeeder.Seed();
+            DbSeeder.Seed(includeDemoData);
 
             Console.WriteLine("Ledgerly API server (C# / .NET Framework 4.8)");
             Console.WriteLine("Compatible with Windows 7 SP1 and later");
@@ -152,6 +152,11 @@ internal static class Program
 Usage:
   Ledgerly.Server.exe
       Start the API using %LOCALAPPDATA%\Ledgerly\Server\server.json
+      Fresh databases get clean system defaults only (no demo catalog).
+
+  Ledgerly.Server.exe --demo
+      Same as above, but seed sample customers, suppliers, products, and POs
+      when the product catalog is empty (for demos / training).
 
   Ledgerly.Server.exe migrate --connection ""<sql-server-connection-string>""
       Copy current database to an empty SQL Server database and switch config.

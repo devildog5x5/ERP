@@ -911,8 +911,8 @@ public class EnterpriseController : ApiController
     }
 
     /// <summary>
-    /// Wipe the database and reseed demo defaults. Administrator only.
-    /// Creates a backup first. Invalidates all sessions.
+    /// Wipe the database and reseed clean system defaults (no demo catalog).
+    /// Administrator only. Creates a backup first. Invalidates all sessions.
     /// </summary>
     [HttpPost, Route("database/refresh")]
     public IHttpActionResult RefreshDatabase([FromBody] DatabaseRefreshDto dto)

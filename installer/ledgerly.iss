@@ -4,7 +4,7 @@
   #define Package "combined"
 #endif
 
-#define MyAppVersion "1.5.1"
+#define MyAppVersion "1.5.2"
 #define MyAppPublisher "Ledgerly"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
 
@@ -57,6 +57,11 @@ VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#VersionDesc}
 VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}
+; Replace an existing install of this package (same AppId) instead of stacking copies.
+UsePreviousAppDir=yes
+UsePreviousGroup=yes
+CloseApplications=yes
+RestartApplications=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -125,15 +130,9 @@ Filename: "{app}\Ledgerly.Server.exe"; Description: "Launch Ledgerly Server now"
 Filename: "{app}\Ledgerly.Client.exe"; Description: "Launch Ledgerly Client now"; Flags: nowait postinstall skipifsilent unchecked; WorkingDir: "{app}"
 #endif
 
-[UninstallDelete]
-#if Package == "combined"
-Type: filesandordirs; Name: "{localappdata}\Ledgerly\Server"
-Type: filesandordirs; Name: "{localappdata}\Ledgerly\Client"
-#elif Package == "server"
-Type: filesandordirs; Name: "{localappdata}\Ledgerly\Server"
-#else
-Type: filesandordirs; Name: "{localappdata}\Ledgerly\Client"
-#endif
+; Keep %LOCALAPPDATA%\Ledgerly\* (database, server.json, client settings) across
+; uninstall/reinstall so upgrades do not wipe company data. Use Settings → Refresh
+; database when a clean slate is wanted.
 
 [Code]
 function IsDotNet48OrLater(): Boolean;
@@ -168,6 +167,84 @@ begin
   end;
 
   Result := True;
+end;
+
+function GetUninstallRegKey(): String;
+begin
+  // Same AppId as [Setup]; uninstall key is AppId + _is1
+  Result := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#AppIdGuid}_is1';
+end;
+
+function TryGetUninstallString(var UninstallString: String): Boolean;
+var
+  Key: String;
+begin
+  Key := GetUninstallRegKey();
+  UninstallString := '';
+  Result :=
+    RegQueryStringValue(HKCU, Key, 'UninstallString', UninstallString) or
+    RegQueryStringValue(HKLM, Key, 'UninstallString', UninstallString);
+end;
+
+procedure StopLedgerlyApps();
+var
+  ResultCode: Integer;
+begin
+  // Best-effort: unlock binaries before uninstall/replace
+  Exec('taskkill.exe', '/F /IM Ledgerly.Client.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM Ledgerly.Server.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(500);
+end;
+
+procedure WaitForFileGone(const FileName: String; TimeoutMs: Integer);
+var
+  Elapsed: Integer;
+begin
+  Elapsed := 0;
+  while (Elapsed < TimeoutMs) and FileExists(FileName) do
+  begin
+    Sleep(250);
+    Elapsed := Elapsed + 250;
+  end;
+end;
+
+function UninstallPreviousVersion(): Boolean;
+var
+  UninstallString: String;
+  UninstallerPath: String;
+  ResultCode: Integer;
+begin
+  Result := True;
+  if not TryGetUninstallString(UninstallString) then
+    exit;
+
+  UninstallerPath := RemoveQuotes(UninstallString);
+  if (UninstallerPath = '') or (not FileExists(UninstallerPath)) then
+    exit;
+
+  StopLedgerlyApps();
+
+  // unins*.exe spawns a child and exits early; wait until the uninstaller file is gone.
+  if not Exec(UninstallerPath, '/VERYSILENT /NORESTART /SUPPRESSMSGBOXES', '',
+       SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  begin
+    Result := False;
+    exit;
+  end;
+
+  WaitForFileGone(UninstallerPath, 60000);
+  Sleep(500);
+  Result := True;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  NeedsRestart := False;
+  Result := '';
+  StopLedgerlyApps();
+  if not UninstallPreviousVersion() then
+    Result := 'Could not uninstall the previous version of {#MyAppName}. ' +
+      'Close Ledgerly completely, uninstall it from Apps & features, then run this installer again.';
 end;
 
 #if Package == "combined"

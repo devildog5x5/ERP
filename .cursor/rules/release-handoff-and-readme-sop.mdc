@@ -5,22 +5,33 @@ alwaysApply: true
 
 # Release, handoff, and README SOP (Ledgerly ERP)
 
-When the user asks for a **shipping build**, **release**, **hotfix binaries**, **SOP completion**, or finishing work that affects **downloadable installers** or **README download docs**, do **all** that apply—**without waiting to be reminded**.
+**Always ship without asking.** When you finish a connected set of changes that affects **runnable client/server behavior**, **installers**, **packaging**, or **README download docs** — or the user asks for a shipping build / release / hotfix — do the full pipeline below. Do **not** end with “want me to commit/release?”
 
-## Git (when code or README download docs change)
+## Git (required)
 
-1. `git status` — no unintended files.
-2. Commit with a clear message (why / what).
+1. `git status` — no unintended files (skip secrets, skip `bin/`/`obj/` noise).
+2. Commit source + installer script + README + the three `installers\*Setup.exe` when rebuilt.
 3. `git push` to the user’s branch (usually `main`). Diagnose push failures; do not end with “you should push.”
 
-## Builds
+## Builds + GitHub Release (required)
 
 1. `dotnet build` Shared → Server → Client **`-c Release`**.
-2. **Always** produce **all three** installers via `powershell -File .\build_installers.ps1` (never ship only the combined):
+2. Produce **all three** installers via `powershell -File .\build_installers.ps1`:
    - `LedgerlySetup.exe` — combined (Client and/or Server)
    - `LedgerlyClientSetup.exe` — client only
    - `LedgerlyServerSetup.exe` — server only
-3. Upload **all three** assets to the GitHub Release for that tag.
+3. Bump `MyAppVersion` in `installer/ledgerly.iss` when shipping a new tag.
+4. Create the next tag (`vX.Y.Z`) and **GitHub Release**, uploading **all three** assets:
+   ```powershell
+   gh release create vX.Y.Z `
+     installers/LedgerlySetup.exe `
+     installers/LedgerlyClientSetup.exe `
+     installers/LedgerlyServerSetup.exe `
+     --title "vX.Y.Z" `
+     --notes "..."
+   ```
+5. Then update README Downloads (below), commit, push again if needed.
+6. If the profile-downloads updater is available, refresh `devildog5x5` README download links (see `profile-downloads-readme-update.mdc`).
 
 ## README Downloads (required for a new Release)
 

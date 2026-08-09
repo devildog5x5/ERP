@@ -40,7 +40,7 @@
                 <StackPanel>
                     <TextBlock Text="Danger zone" FontWeight="SemiBold" FontSize="16" Foreground="#B42318" Margin="0,0,0,8"/>
                     <TextBlock TextWrapping="Wrap" Foreground="#667888" Margin="0,0,0,12"
-                               Text="Refresh database wipes all business data, recreates the schema, and reseeds demo defaults. A backup is taken first. Administrator only. You must complete three confirmations before it runs. You will need to sign in again (admin / admin)."/>
+                               Text="Refresh database wipes all business data, recreates the schema, and reseeds clean system defaults only (roles, admin user, tax codes, GL accounts, locations — no demo customers, suppliers, products, or orders). A backup is taken first. Administrator only. You must complete three confirmations before it runs. You will need to sign in again (admin / admin)."/>
                     <Button x:Name="RefreshDatabaseBtn" Content="Refresh database…" Style="{StaticResource DangerButton}"
                             HorizontalAlignment="Left" Click="RefreshDatabase_Click"/>
                     <StackPanel x:Name="RefreshProgressPanel" Visibility="Collapsed" Margin="0,14,0,0">

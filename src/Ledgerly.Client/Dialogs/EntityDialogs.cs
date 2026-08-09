@@ -468,7 +468,7 @@ public static class EntityDialogs
         });
         panel.Children.Add(new TextBlock
         {
-            Text = "A backup is created first. You will need to sign in again as admin / admin afterward.",
+            Text = "A backup is created first. Afterward you get a clean company start (no demo customers/suppliers/products). Sign in again as admin / admin.",
             TextWrapping = TextWrapping.Wrap,
             Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)),
             Margin = new Thickness(0, 0, 0, 16)

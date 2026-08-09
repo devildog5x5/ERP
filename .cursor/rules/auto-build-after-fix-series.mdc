@@ -26,3 +26,5 @@ When you finish a **connected set of changes** that fix or materially affect **c
 Do this **automatically**; do not wait for “build it,” “so we can test,” or “give me download links.”
 
 When packaging installers (shipping drop / release SOP), **always** run `build_installers.ps1` so Combined, Client-only, and Server-only are all produced and linked.
+
+Also **always** complete the full ship pipeline in `release-handoff-and-readme-sop.mdc` (commit, push, GitHub Release with all three installers, README Downloads, profile downloads if available). Do not ask permission to release after a shipping-ready fix series.

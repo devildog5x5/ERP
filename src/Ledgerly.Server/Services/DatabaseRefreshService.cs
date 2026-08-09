@@ -25,13 +25,14 @@ public static class DatabaseRefreshService
         if (Db.Provider == DatabaseProvider.Sqlite)
             TryDeleteSqliteSidecars();
 
-        DbSeeder.Seed();
+        // Clean system scaffolding only — no demo customers, suppliers, products, or orders.
+        DbSeeder.SeedClean();
 
         return new DatabaseRefreshResultDto
         {
             Refreshed = true,
             BackupPath = backup.Path,
-            Message = "Database wiped and reseeded. Sign in again as admin / admin."
+            Message = "Database wiped and reset to a clean company start (no demo data). Sign in again as admin / admin."
         };
     }
 
