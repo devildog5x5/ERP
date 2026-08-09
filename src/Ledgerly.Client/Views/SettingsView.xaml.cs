@@ -20,9 +20,12 @@ public partial class SettingsView : UserControl
         return view;
     }
 
+    private Window? OwnerWindow => Window.GetWindow(this);
+
     private async Task LoadAsync()
     {
         ApiUrlBox.Text = App.Config.ApiBaseUrl;
+        AdminDangerPanel.Visibility = Session.IsAdministrator ? Visibility.Visible : Visibility.Collapsed;
         await RefreshPlatformAsync();
         try
         {
@@ -116,5 +119,68 @@ public partial class SettingsView : UserControl
                 : $"Connected: {health.App} · {health.DatabaseProvider}";
         }
         catch (Exception ex) { StatusText.Text = "Connection failed: " + ex.Message; }
+    }
+
+    private async void RefreshDatabase_Click(object sender, RoutedEventArgs e)
+    {
+        if (!Session.IsAdministrator)
+        {
+            MessageBox.Show(OwnerWindow,
+                "Only an Administrator can refresh the database.",
+                "Access denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var owner = OwnerWindow;
+        // Confirmation 1 of 3
+        if (MessageBox.Show(owner,
+                "Refresh database will ERASE all products, orders, partners, finance data, and users, then reload demo defaults.\n\nA backup is created first.\n\nContinue?",
+                "Refresh database (1/3)",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+
+        // Confirmation 2 of 3
+        if (MessageBox.Show(owner,
+                "This cannot be undone from the app (except by restoring a backup).\n\nAre you absolutely sure you want to wipe the database?",
+                "Refresh database (2/3)",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+
+        // Confirmation 3 of 3 — typed phrase
+        var typed = EntityDialogs.FieldPrompt(owner!, "Type REFRESH DATABASE to confirm");
+        if (!string.Equals(typed?.Trim(), "REFRESH DATABASE", StringComparison.Ordinal))
+        {
+            StatusText.Text = "Database refresh cancelled — confirmation phrase did not match.";
+            return;
+        }
+
+        try
+        {
+            StatusText.Text = "Refreshing database…";
+            var result = await App.Api.RefreshDatabaseAsync(new DatabaseRefreshDto
+            {
+                Confirmation = "REFRESH DATABASE"
+            });
+
+            App.Api.SetAuthToken(null);
+            Session.Clear();
+
+            MessageBox.Show(owner,
+                (result?.Message ?? "Database refreshed.") +
+                (string.IsNullOrWhiteSpace(result?.BackupPath) ? "" : $"\n\nBackup: {result!.BackupPath}") +
+                "\n\nSign in again with admin / admin.",
+                "Database refreshed",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+
+            if (!App.PromptRelogin("Database was refreshed. Sign in again."))
+            {
+                Application.Current.Shutdown();
+                return;
+            }
+
+            await LoadAsync();
+            StatusText.Text = "Database refreshed. Signed in again.";
+        }
+        catch (Exception ex) { EntityDialogs.ShowError(ex); }
     }
 }

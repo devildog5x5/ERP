@@ -113,6 +113,8 @@ public sealed class ApiClient : IDisposable
     public Task<BackupResultDto?> BackupAsync() => PostAsync<BackupResultDto>("api/backup", new { });
     public Task<List<BackupResultDto>?> ListBackupsAsync() => GetAsync<List<BackupResultDto>>("api/backup/list");
     public Task RestoreBackupAsync(string path) => PostAsync<object>("api/backup/restore", new BackupResultDto { Path = path });
+    public Task<DatabaseRefreshResultDto?> RefreshDatabaseAsync(DatabaseRefreshDto dto) =>
+        PostAsync<DatabaseRefreshResultDto>("api/database/refresh", dto);
 
     public Task<HealthDto?> GetHealthAsync() => GetAsync<HealthDto>("api/health");
     public Task<DashboardDto?> GetDashboardAsync() => GetAsync<DashboardDto>("api/dashboard");

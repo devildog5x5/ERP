@@ -910,6 +910,40 @@ public class EnterpriseController : ApiController
         return Ok(files);
     }
 
+    /// <summary>
+    /// Wipe the database and reseed demo defaults. Administrator only.
+    /// Creates a backup first. Invalidates all sessions.
+    /// </summary>
+    [HttpPost, Route("database/refresh")]
+    public IHttpActionResult RefreshDatabase([FromBody] DatabaseRefreshDto dto)
+    {
+        if (!RequestAuth.IsAdministrator(UserEntity))
+            return ResponseMessage(Request.CreateResponse(System.Net.HttpStatusCode.Forbidden,
+                "Only an Administrator can refresh the database."));
+
+        var confirmation = (dto?.Confirmation ?? "").Trim();
+        if (!string.Equals(confirmation, DatabaseRefreshService.RequiredConfirmation, StringComparison.Ordinal))
+            return BadRequest($"Type {DatabaseRefreshService.RequiredConfirmation} to confirm.");
+
+        try
+        {
+            var actor = UserEntity?.UserName ?? "admin";
+            var result = DatabaseRefreshService.Refresh();
+            // Fresh DB — write audit after seed so the row survives.
+            using (var db = Db.Create())
+            {
+                AuditService.Write(db, null, actor, "database-refresh", "database", null,
+                    $"Refreshed by {actor}. Backup: {result.BackupPath}");
+                db.SaveChanges();
+            }
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     private static List<AgingRowDto> BuildArAging(ErpDbContext db)
     {
         var open = db.SalesOrders.Include(s => s.Customer).AsEnumerable()

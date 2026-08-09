@@ -354,6 +354,19 @@ public class BackupResultDto
     public string Provider { get; set; } = "";
 }
 
+public class DatabaseRefreshDto
+{
+    /// <summary>Must be exactly "REFRESH DATABASE".</summary>
+    public string Confirmation { get; set; } = "";
+}
+
+public class DatabaseRefreshResultDto
+{
+    public bool Refreshed { get; set; }
+    public string? BackupPath { get; set; }
+    public string Message { get; set; } = "";
+}
+
 public class ShipOrderDto
 {
     public List<ShipLineDto> Lines { get; set; } = new();
