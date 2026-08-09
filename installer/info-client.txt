@@ -1,0 +1,18 @@
+Ledgerly Client
+===============
+
+Installs the Ledgerly desktop work screen on this computer.
+
+What you get
+  - Ledgerly.Client.exe (WPF desktop UI)
+  - Settings under %LOCALAPPDATA%\Ledgerly\Client
+
+Important
+  The Client does not store inventory or orders by itself.
+  Ledgerly Server must already be installed and running
+  before you can sign in.
+
+If Server runs on another machine, open Client Settings and
+point the API URL at that machine (for example http://192.168.1.10:8000).
+
+Requires 64-bit Windows 7 SP1 or later and .NET Framework 4.8.

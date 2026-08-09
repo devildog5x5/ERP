@@ -1,5 +1,5 @@
 # Build Ledgerly C# (.NET Framework 4.8) binaries and ALL three Inno Setup installers:
-#   LedgerlySetup.exe       — combined (Client + Server, with component choices)
+#   LedgerlySetup.exe       — chooser (Both / Server / Client)
 #   LedgerlyClientSetup.exe — client only
 #   LedgerlyServerSetup.exe — server only
 # Requires: .NET SDK + net48 targeting pack, Inno Setup 6 (ISCC.exe).
@@ -17,6 +17,11 @@ $clientOut = Join-Path $root "dist\LedgerlyClient"
 $installerOut = Join-Path $root "dist\installers"
 $publishDir = Join-Path $root "installers"
 $names = @("LedgerlySetup.exe", "LedgerlyClientSetup.exe", "LedgerlyServerSetup.exe")
+$scripts = @(
+    @{ Name = "server";  Iss = "installer\server.iss" },
+    @{ Name = "client";  Iss = "installer\client.iss" },
+    @{ Name = "chooser"; Iss = "installer\ledgerly.iss" }
+)
 
 Write-Host "==> Cleaning previous packaging outputs"
 Remove-Item -Recurse -Force $serverOut, $clientOut -ErrorAction SilentlyContinue
@@ -41,10 +46,10 @@ if (-not (Test-Path (Join-Path $clientOut "Ledgerly.Client.exe"))) {
     throw "Missing Ledgerly.Client.exe in $clientOut"
 }
 
-foreach ($package in @("combined", "client", "server")) {
-    Write-Host "==> Compiling $package installer"
-    & $iscc "/DPackage=$package" "installer\ledgerly.iss"
-    if ($LASTEXITCODE -ne 0) { throw "Inno Setup compile failed for Package=$package" }
+foreach ($package in $scripts) {
+    Write-Host "==> Compiling $($package.Name) installer ($($package.Iss))"
+    & $iscc $package.Iss
+    if ($LASTEXITCODE -ne 0) { throw "Inno Setup compile failed for $($package.Iss)" }
 }
 
 foreach ($n in $names) {

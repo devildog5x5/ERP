@@ -20,3 +20,6 @@ dist/
 *.suo
 .vs/
 *.db.bak*
+
+# Built Windows installers (produce with build_installers.ps1)
+installers/*.exe
