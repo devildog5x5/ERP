@@ -1,10 +1,10 @@
-ï»¿; Coalesce.ERP.CRM installers (C# / .NET Framework 4.8)
+; Coalesce.ERP.CRM installers (C# / .NET Framework 4.8)
 ; Build with: ISCC /DPackage=combined|client|server installer\coalesce.iss
 #ifndef Package
   #define Package "combined"
 #endif
 
-#define MyAppVersion "1.6.1"
+#define MyAppVersion "1.6.2"
 #define MyAppPublisher "Coalesce"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
 #define MyAppName "Coalesce.ERP.CRM"
@@ -262,7 +262,7 @@ begin
 
   RoleSubhead := TNewStaticText.Create(RolePage);
   RoleSubhead.Parent := RolePage.Surface;
-  RoleSubhead.Caption := 'Coalesce.ERP.CRM â€” pick one option below.';
+  RoleSubhead.Caption := 'Coalesce.ERP.CRM — pick one option below.';
   RoleSubhead.Font.Name := 'Segoe UI';
   RoleSubhead.Font.Size := 11;
   RoleSubhead.Font.Style := [fsBold];
@@ -274,7 +274,7 @@ begin
 
   RoleBoth := TRadioButton.Create(RolePage);
   RoleBoth.Parent := RolePage.Surface;
-  RoleBoth.Caption := 'BOTH  â€”  Client and Server (recommended)';
+  RoleBoth.Caption := 'BOTH  —  Client and Server (recommended)';
   RoleBoth.Font.Name := 'Segoe UI';
   RoleBoth.Font.Size := 12;
   RoleBoth.Font.Style := [fsBold];
@@ -298,7 +298,7 @@ begin
 
   RoleClient := TRadioButton.Create(RolePage);
   RoleClient.Parent := RolePage.Surface;
-  RoleClient.Caption := 'CLIENT ONLY  â€”  Desktop UI';
+  RoleClient.Caption := 'CLIENT ONLY  —  Desktop UI';
   RoleClient.Font.Name := 'Segoe UI';
   RoleClient.Font.Size := 12;
   RoleClient.Font.Style := [fsBold];
@@ -322,7 +322,7 @@ begin
 
   RoleServer := TRadioButton.Create(RolePage);
   RoleServer.Parent := RolePage.Surface;
-  RoleServer.Caption := 'SERVER ONLY  â€”  API and database';
+  RoleServer.Caption := 'SERVER ONLY  —  API and database';
   RoleServer.Font.Name := 'Segoe UI';
   RoleServer.Font.Size := 12;
   RoleServer.Font.Style := [fsBold];

@@ -8,10 +8,10 @@
     <Border Margin="28" Background="White" CornerRadius="14" Padding="28" BorderBrush="#E2E8EE" BorderThickness="1">
         <StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                <Border Width="56" Height="56" CornerRadius="12" Background="#000000" Margin="0,0,14,0"
+                <Border Width="56" Height="56" CornerRadius="12" Background="White" Margin="0,0,14,0"
                         BorderBrush="#E2E8EE" BorderThickness="1" ClipToBounds="True">
-                    <Image Source="pack://application:,,,/Assets/coalesce-icon.png" Stretch="UniformToFill"
-                           RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                    <Image Source="pack://application:,,,/Assets/coalesce-icon.png" Stretch="Uniform"
+                           Margin="4" RenderOptions.BitmapScalingMode="HighQuality"/>
                 </Border>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="Coalesce.ERP.CRM" FontSize="22" FontWeight="SemiBold" Foreground="#15202B"/>

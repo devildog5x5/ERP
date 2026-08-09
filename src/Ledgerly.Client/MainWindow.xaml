@@ -20,10 +20,10 @@
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Margin="4,8,4,24">
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="42" Height="42" CornerRadius="10" Background="#000000" Margin="0,0,12,0"
+                        <Border Width="42" Height="42" CornerRadius="10" Background="White" Margin="0,0,12,0"
                                 BorderBrush="#2A3540" BorderThickness="1" ClipToBounds="True">
-                            <Image Source="pack://application:,,,/Assets/coalesce-icon.png" Stretch="UniformToFill"
-                                   RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                            <Image Source="pack://application:,,,/Assets/coalesce-icon.png" Stretch="Uniform"
+                                   Margin="3" RenderOptions.BitmapScalingMode="HighQuality"/>
                         </Border>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="Coalesce" Foreground="White" FontSize="18" FontWeight="SemiBold"/>
