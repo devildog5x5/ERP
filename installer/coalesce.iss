@@ -1,10 +1,10 @@
-; Coalesce installers (C# / .NET Framework 4.8)
+﻿; Coalesce installers (C# / .NET Framework 4.8)
 ; Build with: ISCC /DPackage=combined|client|server installer\coalesce.iss
 #ifndef Package
   #define Package "combined"
 #endif
 
-#define MyAppVersion "1.6.4"
+#define MyAppVersion "1.6.5"
 #define MyAppPublisher "Coalesce"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
 #define MyAppName "Coalesce"

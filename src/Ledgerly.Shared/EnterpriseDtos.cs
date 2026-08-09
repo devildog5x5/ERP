@@ -367,6 +367,57 @@ public class DatabaseRefreshResultDto
     public string Message { get; set; } = "";
 }
 
+public class DatabaseStatusDto
+{
+    public string Provider { get; set; } = "Sqlite";
+    public string ProviderLabel { get; set; } = "SQLite";
+    public string Summary { get; set; } = "";
+    public string? Location { get; set; }
+    public string? EngineVersion { get; set; }
+    public bool MultiUserReady { get; set; }
+    public string CapacityLevel { get; set; } = "ok"; // ok | watch | high | critical
+    public string CapacityLabel { get; set; } = "Healthy";
+    public double? PercentFull { get; set; }
+    public long? UsedBytes { get; set; }
+    public long? FreeBytes { get; set; }
+    public long? CapacityBytes { get; set; }
+    public string UsedDisplay { get; set; } = "";
+    public string FreeDisplay { get; set; } = "";
+    public string CapacityDisplay { get; set; } = "";
+    public string PercentDisplay { get; set; } = "";
+    public List<string> Characteristics { get; set; } = new();
+    public List<DatabaseTableStatDto> Tables { get; set; } = new();
+    public List<DatabaseSuggestionDto> Suggestions { get; set; } = new();
+    public List<string> RecommendedActions { get; set; } = new();
+}
+
+public class DatabaseTableStatDto
+{
+    public string Name { get; set; } = "";
+    public int Rows { get; set; }
+}
+
+public class DatabaseSuggestionDto
+{
+    public string Severity { get; set; } = "info"; // info | watch | high | critical
+    public string Title { get; set; } = "";
+    public string Detail { get; set; } = "";
+    public string? ActionKey { get; set; }
+}
+
+public class DatabasePurgeDto
+{
+    /// <summary>Must be exactly "PURGE MAINTENANCE".</summary>
+    public string Confirmation { get; set; } = "";
+}
+
+public class DatabasePurgeResultDto
+{
+    public int AuditLogsRemoved { get; set; }
+    public int RemindersRemoved { get; set; }
+    public string Message { get; set; } = "";
+}
+
 public class ShipOrderDto
 {
     public List<ShipLineDto> Lines { get; set; } = new();

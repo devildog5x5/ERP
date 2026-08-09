@@ -911,6 +911,53 @@ public class EnterpriseController : ApiController
     }
 
     /// <summary>
+    /// Database type, size/fullness, characteristics, and capacity suggestions. Administrator only.
+    /// </summary>
+    [HttpGet, Route("database/status")]
+    public IHttpActionResult DatabaseStatus()
+    {
+        if (!RequestAuth.IsAdministrator(UserEntity))
+            return ResponseMessage(Request.CreateResponse(System.Net.HttpStatusCode.Forbidden,
+                "Only an Administrator can view database status."));
+
+        try
+        {
+            return Ok(DatabaseStatusService.GetStatus());
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Remove old audit logs (180+ days) and resolved reminders (90+ days). Administrator only.
+    /// </summary>
+    [HttpPost, Route("database/purge-maintenance")]
+    public IHttpActionResult PurgeDatabaseMaintenance([FromBody] DatabasePurgeDto dto)
+    {
+        if (!RequestAuth.IsAdministrator(UserEntity))
+            return ResponseMessage(Request.CreateResponse(System.Net.HttpStatusCode.Forbidden,
+                "Only an Administrator can purge maintenance data."));
+
+        if (!string.Equals((dto?.Confirmation ?? "").Trim(), "PURGE MAINTENANCE", StringComparison.Ordinal))
+            return BadRequest("Type PURGE MAINTENANCE to confirm.");
+
+        try
+        {
+            var result = DatabaseStatusService.PurgeMaintenance();
+            using var db = Db.Create();
+            AuditService.Write(db, UserEntity?.Id, UserEntity?.UserName ?? "admin", "database-purge", "database", null, result.Message);
+            db.SaveChanges();
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Wipe the database and reseed clean system defaults (no demo catalog).
     /// Administrator only. Creates a backup first. Invalidates all sessions.
     /// </summary>

@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,7 +28,10 @@ public partial class SettingsView : UserControl
     {
         ApiUrlBox.Text = App.Config.ApiBaseUrl;
         AdminDangerPanel.Visibility = Session.IsAdministrator ? Visibility.Visible : Visibility.Collapsed;
+        AdminDbStatusPanel.Visibility = Session.IsAdministrator ? Visibility.Visible : Visibility.Collapsed;
         await RefreshPlatformAsync();
+        if (Session.IsAdministrator)
+            await RefreshDbStatusSummaryAsync();
         try
         {
             var s = await App.Api.GetSettingsAsync() ?? new SettingsDto();
@@ -47,6 +51,99 @@ public partial class SettingsView : UserControl
     }
 
     private async void RefreshPlatform_Click(object sender, RoutedEventArgs e) => await RefreshPlatformAsync();
+    private async void RefreshDbStatus_Click(object sender, RoutedEventArgs e) => await RefreshDbStatusSummaryAsync();
+
+    private async void DatabaseStatus_Click(object sender, RoutedEventArgs e)
+    {
+        if (!Session.IsAdministrator)
+        {
+            MessageBox.Show(OwnerWindow, "Only an Administrator can view database status.",
+                "Access denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            var status = await App.Api.GetDatabaseStatusAsync();
+            if (status is null)
+            {
+                StatusText.Text = "Could not load database status.";
+                return;
+            }
+
+            ApplyDbStatusSummary(status);
+            var action = EntityDialogs.ShowDatabaseStatus(OwnerWindow, status);
+            if (string.IsNullOrWhiteSpace(action))
+                return;
+
+            await HandleDatabaseStatusActionAsync(action);
+            await RefreshDbStatusSummaryAsync();
+        }
+        catch (Exception ex)
+        {
+            EntityDialogs.ShowError(ex);
+        }
+    }
+
+    private async Task HandleDatabaseStatusActionAsync(string action)
+    {
+        var owner = OwnerWindow;
+        switch (action.ToLowerInvariant())
+        {
+            case "backup":
+            {
+                var r = await App.Api.BackupAsync();
+                MessageBox.Show(owner,
+                    "Backup created:\n" + (r?.Path ?? "(unknown path)"),
+                    Brand.ProductName, MessageBoxButton.OK, MessageBoxImage.Information);
+                StatusText.Text = "Backup completed.";
+                break;
+            }
+            case "purge":
+            {
+                if (!EntityDialogs.ConfirmTypedPhrase(owner,
+                        "Purge old maintenance data",
+                        "This removes audit logs older than 180 days and resolved reminders older than 90 days.\n\n" +
+                        "Orders, inventory, partners, and CRM records are kept.",
+                        "PURGE MAINTENANCE"))
+                {
+                    StatusText.Text = "Purge cancelled.";
+                    return;
+                }
+
+                var result = await App.Api.PurgeDatabaseMaintenanceAsync(new DatabasePurgeDto
+                {
+                    Confirmation = "PURGE MAINTENANCE"
+                });
+                MessageBox.Show(owner, result?.Message ?? "Purge complete.", Brand.ProductName,
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                StatusText.Text = result?.Message ?? "Purge complete.";
+                break;
+            }
+            case "migrate":
+                MessageBox.Show(owner,
+                    "To move to SQL Server, MySQL, or PostgreSQL:\n\n" +
+                    "1. Create an empty database on the target server.\n" +
+                    "2. Stop Coalesce.Server.\n" +
+                    "3. Run:\n" +
+                    "   Coalesce.Server.exe migrate --provider SqlServer --connection \"...\"\n" +
+                    "   (or MySql / PostgreSql)\n\n" +
+                    "Or for an empty target without copying data:\n" +
+                    "   Coalesce.Server.exe set-db --provider MySql --connection \"...\"\n\n" +
+                    "See README → Database providers.",
+                    "Migrate database", MessageBoxButton.OK, MessageBoxImage.Information);
+                break;
+            case "free-disk":
+                MessageBox.Show(owner,
+                    "Free space on the drive that holds the database:\n\n" +
+                    "• Empty the Recycle Bin\n" +
+                    "• Move large downloads/videos off the system drive\n" +
+                    "• Keep several GB free for growth and backups\n" +
+                    "• After freeing space, reopen Database status to recheck",
+                    "Free disk space", MessageBoxButton.OK, MessageBoxImage.Information);
+                break;
+        }
+    }
 
     private async Task RefreshPlatformAsync()
     {
@@ -69,6 +166,46 @@ public partial class SettingsView : UserControl
         {
             DbPlatformText.Text = "Could not read platform info: " + ex.Message;
         }
+    }
+
+    private async Task RefreshDbStatusSummaryAsync()
+    {
+        if (!Session.IsAdministrator)
+        {
+            AdminDbStatusPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        try
+        {
+            var status = await App.Api.GetDatabaseStatusAsync();
+            if (status is null)
+            {
+                DbStatusSummaryText.Text = "Could not load database status (API offline or access denied).";
+                return;
+            }
+            ApplyDbStatusSummary(status);
+        }
+        catch (Exception ex)
+        {
+            DbStatusSummaryText.Text = "Could not load database status: " + ex.Message;
+        }
+    }
+
+    private void ApplyDbStatusSummary(DatabaseStatusDto status)
+    {
+        var top = status.Suggestions.OrderByDescending(s => s.Severity switch
+        {
+            "critical" => 3,
+            "high" => 2,
+            "watch" => 1,
+            _ => 0
+        }).FirstOrDefault();
+        DbStatusSummaryText.Text =
+            $"{status.ProviderLabel} · {status.CapacityLabel}\n" +
+            $"Used {status.UsedDisplay}" +
+            (status.PercentFull.HasValue ? $" · Volume {status.PercentDisplay} full" : "") +
+            (top is null ? "" : $"\nNext: {top.Title}");
     }
 
     private async void Save_Click(object sender, RoutedEventArgs e)

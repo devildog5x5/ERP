@@ -359,12 +359,281 @@ public static class EntityDialogs
         };
     }
 
+    /// <summary>
+    /// Admin database status dialog. Returns an action key the caller should run, or null if closed.
+    /// Action keys: backup, purge, migrate (informational), free-disk (informational).
+    /// </summary>
+    public static string? ShowDatabaseStatus(Window? owner, DatabaseStatusDto status)
+    {
+        string? chosen = null;
+        var dialog = new Window
+        {
+            Title = "Database status",
+            Owner = owner,
+            Width = 640,
+            Height = 620,
+            MinWidth = 520,
+            MinHeight = 480,
+            WindowStartupLocation = owner != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen,
+            ResizeMode = ResizeMode.CanResizeWithGrip,
+            Background = Brushes.White
+        };
+
+        var levelBrush = status.CapacityLevel switch
+        {
+            "critical" => new SolidColorBrush(Color.FromRgb(0xB4, 0x23, 0x18)),
+            "high" => new SolidColorBrush(Color.FromRgb(0xB5, 0x47, 0x08)),
+            "watch" => new SolidColorBrush(Color.FromRgb(0xA1, 0x62, 0x07)),
+            _ => new SolidColorBrush(Color.FromRgb(0x02, 0x78, 0x4A))
+        };
+        var levelBg = status.CapacityLevel switch
+        {
+            "critical" => new SolidColorBrush(Color.FromRgb(0xFE, 0xF2, 0xF2)),
+            "high" => new SolidColorBrush(Color.FromRgb(0xFF, 0xF7, 0xED)),
+            "watch" => new SolidColorBrush(Color.FromRgb(0xFF, 0xFB, 0xEB)),
+            _ => new SolidColorBrush(Color.FromRgb(0xEC, 0xFD, 0xF5))
+        };
+
+        var root = new DockPanel { Margin = new Thickness(20) };
+
+        var header = new Border
+        {
+            Background = levelBg,
+            BorderBrush = levelBrush,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(14),
+            Margin = new Thickness(0, 0, 0, 14)
+        };
+        header.Child = new StackPanel
+        {
+            Children =
+            {
+                new TextBlock { Text = status.ProviderLabel, FontSize = 18, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(0x15, 0x20, 0x2B)) },
+                new TextBlock { Text = status.CapacityLabel, Foreground = levelBrush, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 4, 0, 0), TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = status.Summary, Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)), Margin = new Thickness(0, 6, 0, 0), TextWrapping = TextWrapping.Wrap }
+            }
+        };
+        DockPanel.SetDock(header, Dock.Top);
+        root.Children.Add(header);
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 14, 0, 0)
+        };
+        Button ActionBtn(string content, string key, bool primary = false)
+        {
+            var b = new Button
+            {
+                Content = content,
+                Style = (Style)Application.Current.FindResource(primary ? "PrimaryButton" : "SecondaryButton"),
+                Margin = new Thickness(0, 0, 8, 0),
+                MinWidth = 110,
+                Tag = key
+            };
+            b.Click += (_, _) =>
+            {
+                chosen = key;
+                dialog.DialogResult = true;
+            };
+            return b;
+        }
+        buttons.Children.Add(ActionBtn("Backup now", "backup", primary: true));
+        if (status.RecommendedActions.Any(a => string.Equals(a, "purge", StringComparison.OrdinalIgnoreCase))
+            || status.Suggestions.Any(s => string.Equals(s.ActionKey, "purge", StringComparison.OrdinalIgnoreCase)))
+            buttons.Children.Add(ActionBtn("Purge old logs…", "purge"));
+        buttons.Children.Add(ActionBtn("Migrate help", "migrate"));
+        var close = new Button
+        {
+            Content = "Close",
+            Style = (Style)Application.Current.FindResource("SecondaryButton"),
+            IsCancel = true,
+            MinWidth = 90
+        };
+        close.Click += (_, _) => dialog.DialogResult = false;
+        buttons.Children.Add(close);
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        root.Children.Add(buttons);
+
+        var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        var body = new StackPanel();
+
+        body.Children.Add(SectionTitle("How full"));
+        body.Children.Add(MetricLine("Database used", status.UsedDisplay));
+        body.Children.Add(MetricLine("Free space", status.FreeDisplay));
+        body.Children.Add(MetricLine("Capacity / volume", status.CapacityDisplay));
+        body.Children.Add(MetricLine("Percent full", status.PercentDisplay));
+        if (!string.IsNullOrWhiteSpace(status.EngineVersion))
+            body.Children.Add(MetricLine("Engine version", status.EngineVersion!));
+        if (!string.IsNullOrWhiteSpace(status.Location))
+            body.Children.Add(MetricLine("Location", status.Location!));
+        body.Children.Add(MetricLine("Multi-user ready", status.MultiUserReady ? "Yes" : "No (local SQLite)"));
+
+        var bar = new ProgressBar
+        {
+            Minimum = 0,
+            Maximum = 100,
+            Height = 18,
+            Margin = new Thickness(0, 8, 0, 16),
+            Value = status.PercentFull ?? (status.CapacityLevel switch
+            {
+                "critical" => 95,
+                "high" => 80,
+                "watch" => 55,
+                _ => 20
+            })
+        };
+        body.Children.Add(bar);
+
+        body.Children.Add(SectionTitle("Characteristics"));
+        foreach (var c in status.Characteristics)
+            body.Children.Add(Bullet(c));
+
+        body.Children.Add(SectionTitle("Largest tables (row counts)"));
+        foreach (var t in status.Tables.Take(10))
+            body.Children.Add(MetricLine(t.Name, t.Rows.ToString("N0")));
+
+        body.Children.Add(SectionTitle("Suggestions"));
+        foreach (var s in status.Suggestions)
+        {
+            var card = new Border
+            {
+                BorderBrush = new SolidColorBrush(Color.FromRgb(0xE2, 0xE8, 0xEE)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(12),
+                Margin = new Thickness(0, 0, 0, 8),
+                Background = new SolidColorBrush(Color.FromRgb(0xF8, 0xFA, 0xFC))
+            };
+            card.Child = new StackPanel
+            {
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = $"[{s.Severity.ToUpperInvariant()}] {s.Title}",
+                        FontWeight = FontWeights.SemiBold,
+                        Foreground = s.Severity switch
+                        {
+                            "critical" => new SolidColorBrush(Color.FromRgb(0xB4, 0x23, 0x18)),
+                            "high" => new SolidColorBrush(Color.FromRgb(0xB5, 0x47, 0x08)),
+                            "watch" => new SolidColorBrush(Color.FromRgb(0xA1, 0x62, 0x07)),
+                            _ => new SolidColorBrush(Color.FromRgb(0x2A, 0x3A, 0x48))
+                        },
+                        TextWrapping = TextWrapping.Wrap
+                    },
+                    new TextBlock
+                    {
+                        Text = s.Detail,
+                        Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)),
+                        Margin = new Thickness(0, 4, 0, 0),
+                        TextWrapping = TextWrapping.Wrap
+                    }
+                }
+            };
+            body.Children.Add(card);
+        }
+
+        scroll.Content = body;
+        root.Children.Add(scroll);
+        dialog.Content = root;
+        dialog.ShowDialog();
+        return chosen;
+    }
+
+    private static TextBlock SectionTitle(string text) => new()
+    {
+        Text = text,
+        FontWeight = FontWeights.SemiBold,
+        FontSize = 14,
+        Margin = new Thickness(0, 8, 0, 8),
+        Foreground = new SolidColorBrush(Color.FromRgb(0x15, 0x20, 0x2B))
+    };
+
+    private static TextBlock MetricLine(string label, string value) => new()
+    {
+        Text = $"{label}: {value}",
+        Margin = new Thickness(0, 0, 0, 4),
+        TextWrapping = TextWrapping.Wrap,
+        Foreground = new SolidColorBrush(Color.FromRgb(0x2A, 0x3A, 0x48))
+    };
+
+    private static TextBlock Bullet(string text) => new()
+    {
+        Text = "• " + text,
+        Margin = new Thickness(0, 0, 0, 4),
+        TextWrapping = TextWrapping.Wrap,
+        Foreground = new SolidColorBrush(Color.FromRgb(0x2A, 0x3A, 0x48))
+    };
+
     public static bool ConfirmDelete(Window owner, string label) =>
         MessageBox.Show(owner, $"Delete {label}?\nThis cannot be undone.", "Confirm delete",
             MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
 
     public static bool Confirm(Window owner, string title, string message) =>
         MessageBox.Show(owner, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+
+    public static bool ConfirmTypedPhrase(Window? owner, string title, string message, string requiredPhrase)
+    {
+        var dialog = new Window
+        {
+            Title = title,
+            Owner = owner,
+            Width = 480,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = owner != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen,
+            ResizeMode = ResizeMode.NoResize,
+            Background = Brushes.White
+        };
+        var phraseBox = new TextBox { Padding = new Thickness(8, 6, 8, 6), Margin = new Thickness(0, 4, 0, 0) };
+        var ok = new Button
+        {
+            Content = "Confirm",
+            Style = (Style)Application.Current.FindResource("DangerButton"),
+            IsDefault = true,
+            MinWidth = 100,
+            Margin = new Thickness(0, 0, 8, 0),
+            IsEnabled = false
+        };
+        var cancel = new Button
+        {
+            Content = "Cancel",
+            Style = (Style)Application.Current.FindResource("SecondaryButton"),
+            IsCancel = true,
+            MinWidth = 90
+        };
+        phraseBox.TextChanged += (_, _) =>
+            ok.IsEnabled = string.Equals(phraseBox.Text.Trim(), requiredPhrase, StringComparison.Ordinal);
+        ok.Click += (_, _) => dialog.DialogResult = true;
+        cancel.Click += (_, _) => dialog.DialogResult = false;
+
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(20),
+            Children =
+            {
+                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12) },
+                new TextBlock
+                {
+                    Text = $"Type {requiredPhrase} exactly to confirm.",
+                    Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)),
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 4)
+                },
+                phraseBox,
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Margin = new Thickness(0, 16, 0, 0),
+                    Children = { ok, cancel }
+                }
+            }
+        };
+        return dialog.ShowDialog() == true;
+    }
 
     /// <summary>
     /// Triple confirmation for database refresh: two explicit checks + typed phrase.

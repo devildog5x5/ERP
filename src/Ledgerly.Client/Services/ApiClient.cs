@@ -115,6 +115,9 @@ public sealed class ApiClient : IDisposable
     public Task RestoreBackupAsync(string path) => PostAsync<object>("api/backup/restore", new BackupResultDto { Path = path });
     public Task<DatabaseRefreshResultDto?> RefreshDatabaseAsync(DatabaseRefreshDto dto) =>
         PostAsync<DatabaseRefreshResultDto>("api/database/refresh", dto);
+    public Task<DatabaseStatusDto?> GetDatabaseStatusAsync() => GetAsync<DatabaseStatusDto>("api/database/status");
+    public Task<DatabasePurgeResultDto?> PurgeDatabaseMaintenanceAsync(DatabasePurgeDto dto) =>
+        PostAsync<DatabasePurgeResultDto>("api/database/purge-maintenance", dto);
 
     public Task<HealthDto?> GetHealthAsync() => GetAsync<HealthDto>("api/health");
     public Task<DashboardDto?> GetDashboardAsync() => GetAsync<DashboardDto>("api/dashboard");
