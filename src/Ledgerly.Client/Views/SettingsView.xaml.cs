@@ -53,6 +53,44 @@ public partial class SettingsView : UserControl
     private async void RefreshPlatform_Click(object sender, RoutedEventArgs e) => await RefreshPlatformAsync();
     private async void RefreshDbStatus_Click(object sender, RoutedEventArgs e) => await RefreshDbStatusSummaryAsync();
 
+    private async void GrowDatabase_Click(object sender, RoutedEventArgs e) => await RunGrowDatabaseAsync();
+
+    private async Task RunGrowDatabaseAsync()
+    {
+        if (!Session.IsAdministrator)
+        {
+            MessageBox.Show(OwnerWindow, "Only an Administrator can grow the database.",
+                "Access denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            var grown = await EntityDialogs.ShowGrowDatabaseAsync(
+                OwnerWindow,
+                test => App.Api.TestDatabaseConnectionAsync(test),
+                grow => App.Api.GrowDatabaseAsync(grow));
+
+            if (!grown) return;
+
+            await RefreshPlatformAsync();
+            await RefreshDbStatusSummaryAsync();
+            StatusText.Text = "Database grown. Server is using the new provider.";
+
+            if (!App.PromptRelogin("Database backend changed. Sign in again to continue."))
+            {
+                Application.Current.Shutdown();
+                return;
+            }
+
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            EntityDialogs.ShowError(ex);
+        }
+    }
+
     private async void DatabaseStatus_Click(object sender, RoutedEventArgs e)
     {
         if (!Session.IsAdministrator)
@@ -120,18 +158,9 @@ public partial class SettingsView : UserControl
                 StatusText.Text = result?.Message ?? "Purge complete.";
                 break;
             }
+            case "grow":
             case "migrate":
-                MessageBox.Show(owner,
-                    "To move to SQL Server, MySQL, or PostgreSQL:\n\n" +
-                    "1. Create an empty database on the target server.\n" +
-                    "2. Stop Coalesce.Server.\n" +
-                    "3. Run:\n" +
-                    "   Coalesce.Server.exe migrate --provider SqlServer --connection \"...\"\n" +
-                    "   (or MySql / PostgreSql)\n\n" +
-                    "Or for an empty target without copying data:\n" +
-                    "   Coalesce.Server.exe set-db --provider MySql --connection \"...\"\n\n" +
-                    "See README → Database providers.",
-                    "Migrate database", MessageBoxButton.OK, MessageBoxImage.Information);
+                await RunGrowDatabaseAsync();
                 break;
             case "free-disk":
                 MessageBox.Show(owner,

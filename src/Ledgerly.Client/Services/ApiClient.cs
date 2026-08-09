@@ -118,6 +118,10 @@ public sealed class ApiClient : IDisposable
     public Task<DatabaseStatusDto?> GetDatabaseStatusAsync() => GetAsync<DatabaseStatusDto>("api/database/status");
     public Task<DatabasePurgeResultDto?> PurgeDatabaseMaintenanceAsync(DatabasePurgeDto dto) =>
         PostAsync<DatabasePurgeResultDto>("api/database/purge-maintenance", dto);
+    public Task<DatabaseConnectionTestResultDto?> TestDatabaseConnectionAsync(DatabaseConnectionTestDto dto) =>
+        PostAsync<DatabaseConnectionTestResultDto>("api/database/test-connection", dto);
+    public Task<DatabaseGrowResultDto?> GrowDatabaseAsync(DatabaseGrowDto dto) =>
+        PostAsync<DatabaseGrowResultDto>("api/database/grow", dto);
 
     public Task<HealthDto?> GetHealthAsync() => GetAsync<HealthDto>("api/health");
     public Task<DashboardDto?> GetDashboardAsync() => GetAsync<DashboardDto>("api/dashboard");

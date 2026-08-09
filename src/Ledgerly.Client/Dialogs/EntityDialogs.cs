@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -362,7 +363,7 @@ public static class EntityDialogs
 
     /// <summary>
     /// Admin database status dialog. Returns an action key the caller should run, or null if closed.
-    /// Action keys: backup, purge, migrate (informational), free-disk (informational).
+    /// Action keys: backup, purge, grow, free-disk (informational).
     /// </summary>
     public static string? ShowDatabaseStatus(Window? owner, DatabaseStatusDto status)
     {
@@ -441,11 +442,11 @@ public static class EntityDialogs
             };
             return b;
         }
-        buttons.Children.Add(ActionBtn("Backup now", "backup", primary: true));
+        buttons.Children.Add(ActionBtn("Grow database…", "grow", primary: true));
+        buttons.Children.Add(ActionBtn("Backup now", "backup"));
         if (status.RecommendedActions.Any(a => string.Equals(a, "purge", StringComparison.OrdinalIgnoreCase))
             || status.Suggestions.Any(s => string.Equals(s.ActionKey, "purge", StringComparison.OrdinalIgnoreCase)))
             buttons.Children.Add(ActionBtn("Purge old logs…", "purge"));
-        buttons.Children.Add(ActionBtn("Migrate help", "migrate"));
         var close = new Button
         {
             Content = "Close",
@@ -802,6 +803,300 @@ public static class EntityDialogs
         var rad = (angleDeg - 90) * Math.PI / 180.0;
         return new Point(cx + radius * Math.Cos(rad), cy + radius * Math.Sin(rad));
     }
+
+    /// <summary>
+    /// Guided grow wizard. Returns true if the database was grown successfully.
+    /// </summary>
+    public static async Task<bool> ShowGrowDatabaseAsync(
+        Window? owner,
+        Func<DatabaseConnectionTestDto, Task<DatabaseConnectionTestResultDto?>> testAsync,
+        Func<DatabaseGrowDto, Task<DatabaseGrowResultDto?>> growAsync)
+    {
+        var dialog = new Window
+        {
+            Title = "Grow database",
+            Owner = owner,
+            Width = 560,
+            Height = 640,
+            MinWidth = 480,
+            MinHeight = 520,
+            WindowStartupLocation = owner != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen,
+            ResizeMode = ResizeMode.CanResizeWithGrip,
+            Background = Brushes.White
+        };
+
+        var providerBox = new ComboBox
+        {
+            Margin = new Thickness(0, 0, 0, 10),
+            Padding = new Thickness(8, 6, 8, 6),
+            ItemsSource = new[] { "SqlServer", "MySql", "PostgreSql" },
+            SelectedIndex = 0
+        };
+        var hostBox = Field("localhost");
+        var portBox = Field("1433");
+        var dbBox = Field("Coalesce");
+        var userBox = Field("");
+        var passBox = new PasswordBox { Padding = new Thickness(8, 6, 8, 6), Margin = new Thickness(0, 0, 0, 10) };
+        var windowsAuth = new CheckBox
+        {
+            Content = "Use Windows authentication (SQL Server)",
+            IsChecked = true,
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+        var copyMode = new RadioButton
+        {
+            Content = "Copy my data (recommended)",
+            IsChecked = true,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        var emptyMode = new RadioButton
+        {
+            Content = "Start empty on the new database",
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+        var advanced = new TextBox
+        {
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            Height = 64,
+            Padding = new Thickness(8, 6, 8, 6),
+            Margin = new Thickness(0, 0, 0, 8),
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+        };
+        var status = new TextBlock
+        {
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)),
+            Margin = new Thickness(0, 0, 0, 8),
+            MinHeight = 36
+        };
+        var phraseBox = new TextBox { Padding = new Thickness(8, 6, 8, 6), Margin = new Thickness(0, 4, 0, 0) };
+
+        void ApplyProviderDefaults()
+        {
+            var p = providerBox.SelectedItem as string ?? "SqlServer";
+            if (p == "SqlServer")
+            {
+                portBox.Text = "1433";
+                windowsAuth.IsEnabled = true;
+                windowsAuth.IsChecked = true;
+                userBox.IsEnabled = false;
+                passBox.IsEnabled = false;
+            }
+            else
+            {
+                portBox.Text = p == "MySql" ? "3306" : "5432";
+                windowsAuth.IsChecked = false;
+                windowsAuth.IsEnabled = false;
+                userBox.IsEnabled = true;
+                passBox.IsEnabled = true;
+                if (string.IsNullOrWhiteSpace(userBox.Text))
+                    userBox.Text = "coalesce";
+            }
+        }
+        providerBox.SelectionChanged += (_, _) => ApplyProviderDefaults();
+        windowsAuth.Checked += (_, _) => { userBox.IsEnabled = false; passBox.IsEnabled = false; };
+        windowsAuth.Unchecked += (_, _) =>
+        {
+            if ((providerBox.SelectedItem as string) == "SqlServer")
+            {
+                userBox.IsEnabled = true;
+                passBox.IsEnabled = true;
+            }
+        };
+        ApplyProviderDefaults();
+
+        DatabaseConnectionTestDto BuildTestDto() => new()
+        {
+            Provider = providerBox.SelectedItem as string ?? "SqlServer",
+            Host = hostBox.Text.Trim(),
+            Port = int.TryParse(portBox.Text.Trim(), out var port) ? port : null,
+            Database = dbBox.Text.Trim(),
+            Username = userBox.Text.Trim(),
+            Password = passBox.Password,
+            UseWindowsAuth = windowsAuth.IsChecked == true,
+            ConnectionString = string.IsNullOrWhiteSpace(advanced.Text) ? null : advanced.Text.Trim()
+        };
+
+        DatabaseGrowDto BuildGrowDto() => new()
+        {
+            Provider = BuildTestDto().Provider,
+            Host = BuildTestDto().Host,
+            Port = BuildTestDto().Port,
+            Database = BuildTestDto().Database,
+            Username = BuildTestDto().Username,
+            Password = BuildTestDto().Password,
+            UseWindowsAuth = BuildTestDto().UseWindowsAuth,
+            ConnectionString = BuildTestDto().ConnectionString,
+            Mode = copyMode.IsChecked == true ? "CopyAndSwitch" : "EmptyAndSwitch",
+            Confirmation = phraseBox.Text.Trim()
+        };
+
+        var testBtn = new Button
+        {
+            Content = "Test connection",
+            Style = (Style)Application.Current.FindResource("SecondaryButton"),
+            Margin = new Thickness(0, 0, 8, 0),
+            MinWidth = 120
+        };
+        var growBtn = new Button
+        {
+            Content = "Grow database",
+            Style = (Style)Application.Current.FindResource("PrimaryButton"),
+            Margin = new Thickness(0, 0, 8, 0),
+            MinWidth = 120,
+            IsEnabled = false
+        };
+        var cancelBtn = new Button
+        {
+            Content = "Cancel",
+            Style = (Style)Application.Current.FindResource("SecondaryButton"),
+            IsCancel = true,
+            MinWidth = 90
+        };
+        phraseBox.TextChanged += (_, _) =>
+            growBtn.IsEnabled = string.Equals(phraseBox.Text.Trim(), "GROW DATABASE", StringComparison.Ordinal);
+
+        var grown = false;
+        testBtn.Click += async (_, _) =>
+        {
+            testBtn.IsEnabled = false;
+            growBtn.IsEnabled = false;
+            status.Text = "Testing connection…";
+            status.Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88));
+            try
+            {
+                var result = await testAsync(BuildTestDto());
+                if (result?.Ok == true)
+                {
+                    status.Text = result.Message + (string.IsNullOrWhiteSpace(result.Summary) ? "" : "\n" + result.Summary);
+                    status.Foreground = new SolidColorBrush(Color.FromRgb(0x02, 0x78, 0x4A));
+                }
+                else
+                {
+                    status.Text = result?.Message ?? "Connection failed.";
+                    status.Foreground = new SolidColorBrush(Color.FromRgb(0xB4, 0x23, 0x18));
+                }
+            }
+            catch (Exception ex)
+            {
+                status.Text = CleanError(ex.Message);
+                status.Foreground = new SolidColorBrush(Color.FromRgb(0xB4, 0x23, 0x18));
+            }
+            finally
+            {
+                testBtn.IsEnabled = true;
+                growBtn.IsEnabled = string.Equals(phraseBox.Text.Trim(), "GROW DATABASE", StringComparison.Ordinal);
+            }
+        };
+
+        growBtn.Click += async (_, _) =>
+        {
+            if (!string.Equals(phraseBox.Text.Trim(), "GROW DATABASE", StringComparison.Ordinal))
+            {
+                status.Text = "Type GROW DATABASE to confirm.";
+                status.Foreground = new SolidColorBrush(Color.FromRgb(0xB4, 0x23, 0x18));
+                return;
+            }
+
+            testBtn.IsEnabled = false;
+            growBtn.IsEnabled = false;
+            cancelBtn.IsEnabled = false;
+            status.Text = "Growing database — copying data and switching…";
+            status.Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88));
+            try
+            {
+                var result = await growAsync(BuildGrowDto());
+                if (result?.Success == true)
+                {
+                    grown = true;
+                    MessageBox.Show(dialog,
+                        result.Message +
+                        (string.IsNullOrWhiteSpace(result.BackupPath) ? "" : "\n\nBackup: " + result.BackupPath) +
+                        "\n\nYou are now on " + result.Provider + ".",
+                        "Database grown", MessageBoxButton.OK, MessageBoxImage.Information);
+                    dialog.DialogResult = true;
+                }
+                else
+                {
+                    status.Text = result?.Message ?? "Grow failed.";
+                    status.Foreground = new SolidColorBrush(Color.FromRgb(0xB4, 0x23, 0x18));
+                }
+            }
+            catch (Exception ex)
+            {
+                status.Text = CleanError(ex.Message);
+                status.Foreground = new SolidColorBrush(Color.FromRgb(0xB4, 0x23, 0x18));
+            }
+            finally
+            {
+                testBtn.IsEnabled = true;
+                cancelBtn.IsEnabled = true;
+                growBtn.IsEnabled = string.Equals(phraseBox.Text.Trim(), "GROW DATABASE", StringComparison.Ordinal);
+            }
+        };
+        cancelBtn.Click += (_, _) => dialog.DialogResult = false;
+
+        var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        scroll.Content = new StackPanel
+        {
+            Margin = new Thickness(20),
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = "Move Coalesce onto a larger database. Create an empty database on the target server first, then fill in the details below.",
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 12),
+                    Foreground = new SolidColorBrush(Color.FromRgb(0x2A, 0x3A, 0x48))
+                },
+                Label("Database type"),
+                providerBox,
+                Label("Host"),
+                hostBox,
+                Label("Port"),
+                portBox,
+                Label("Database name"),
+                dbBox,
+                windowsAuth,
+                Label("Username"),
+                userBox,
+                Label("Password"),
+                passBox,
+                Label("What to do"),
+                copyMode,
+                emptyMode,
+                Label("Advanced connection string (optional override)"),
+                advanced,
+                status,
+                new TextBlock
+                {
+                    Text = "Type GROW DATABASE to enable the Grow button. A backup is taken automatically.",
+                    TextWrapping = TextWrapping.Wrap,
+                    Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)),
+                    Margin = new Thickness(0, 0, 0, 4)
+                },
+                phraseBox,
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Margin = new Thickness(0, 16, 0, 0),
+                    Children = { testBtn, growBtn, cancelBtn }
+                }
+            }
+        };
+        dialog.Content = scroll;
+        dialog.ShowDialog();
+        return grown;
+    }
+
+    private static TextBlock Label(string text) => new()
+    {
+        Text = text,
+        Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)),
+        Margin = new Thickness(0, 0, 0, 4)
+    };
 
     public static bool ConfirmDelete(Window owner, string label) =>
         MessageBox.Show(owner, $"Delete {label}?\nThis cannot be undone.", "Confirm delete",

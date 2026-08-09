@@ -418,6 +418,58 @@ public class DatabasePurgeResultDto
     public string Message { get; set; } = "";
 }
 
+/// <summary>
+/// Grow / move Coalesce onto SQL Server, MySQL, or PostgreSQL from the admin UI.
+/// Mode: CopyAndSwitch (default) or EmptyAndSwitch.
+/// </summary>
+public class DatabaseGrowDto
+{
+    public string Provider { get; set; } = "SqlServer";
+    public string? Host { get; set; }
+    public int? Port { get; set; }
+    public string? Database { get; set; }
+    public string? Username { get; set; }
+    public string? Password { get; set; }
+    public bool UseWindowsAuth { get; set; }
+    /// <summary>Optional full override; when set, host/user fields are ignored.</summary>
+    public string? ConnectionString { get; set; }
+    /// <summary>CopyAndSwitch | EmptyAndSwitch</summary>
+    public string Mode { get; set; } = "CopyAndSwitch";
+    /// <summary>Must be exactly "GROW DATABASE".</summary>
+    public string Confirmation { get; set; } = "";
+}
+
+public class DatabaseGrowResultDto
+{
+    public bool Success { get; set; }
+    public string Provider { get; set; } = "";
+    public string Summary { get; set; } = "";
+    public string? BackupPath { get; set; }
+    public bool ConfigUpdated { get; set; }
+    public string Message { get; set; } = "";
+    public Dictionary<string, int> Counts { get; set; } = new();
+}
+
+public class DatabaseConnectionTestDto
+{
+    public string Provider { get; set; } = "SqlServer";
+    public string? Host { get; set; }
+    public int? Port { get; set; }
+    public string? Database { get; set; }
+    public string? Username { get; set; }
+    public string? Password { get; set; }
+    public bool UseWindowsAuth { get; set; }
+    public string? ConnectionString { get; set; }
+}
+
+public class DatabaseConnectionTestResultDto
+{
+    public bool Ok { get; set; }
+    public string Message { get; set; } = "";
+    public string? Provider { get; set; }
+    public string? Summary { get; set; }
+}
+
 public class ShipOrderDto
 {
     public List<ShipLineDto> Lines { get; set; } = new();

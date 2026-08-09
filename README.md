@@ -14,11 +14,11 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.6/CoalesceSetup.exe) |
-| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.6/CoalesceClientSetup.exe) |
-| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.6/CoalesceServerSetup.exe) |
+| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.7/CoalesceSetup.exe) |
+| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.7/CoalesceClientSetup.exe) |
+| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.7/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.6](https://github.com/devildog5x5/ERP/releases/tag/v1.6.6)
+- Latest release: [v1.6.7](https://github.com/devildog5x5/ERP/releases/tag/v1.6.7)
 - Every installer asks up front — loudly — whether to install **Client**, **Server**, or **Both**.
 - Default login after install: `admin` / `admin`
 - Server listens at `http://127.0.0.1:8000` by default
@@ -73,7 +73,9 @@ Coalesce.Server.exe migrate --provider PostgreSql --connection "Host=localhost;D
 
 Use `--no-switch` on `migrate` to copy without changing `server.json`. Restart the server after `set-db` or a config-switching migrate. File backup/restore in the app applies to SQLite only; use vendor tools for SQL Server / MySQL / PostgreSQL.
 
-Administrators can open **Settings → Database status…** to see provider type, characteristics, capacity/fullness pie charts, table row-share pie, and suggestions (backup, free disk space, purge old logs, migrate off SQLite).
+Administrators can open **Settings → Grow database…** to move onto SQL Server, MySQL, or PostgreSQL (test connection, copy data, switch automatically). **Database status…** shows capacity pies, table share, and suggestions.
+
+**Grow database (UI):** Settings → Grow database… → pick provider → host/database → Test connection → type `GROW DATABASE` → Grow. CLI (`migrate` / `set-db`) still works if you prefer.
 
 ## CRM (complements ERP)
 

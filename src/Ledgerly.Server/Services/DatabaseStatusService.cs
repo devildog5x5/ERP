@@ -309,9 +309,9 @@ public static class DatabaseStatusService
             list.Add(new DatabaseSuggestionDto
             {
                 Severity = dto.CapacityLevel is "high" or "critical" ? dto.CapacityLevel : "info",
-                Title = "Migrate when you outgrow SQLite",
-                Detail = "Stop the server and run: Coalesce.Server.exe migrate --provider SqlServer|MySql|PostgreSql --connection \"...\". The client stays the same.",
-                ActionKey = "migrate"
+                Title = "Grow to a server database",
+                Detail = "Use Settings → Grow database… to move to SQL Server, MySQL, or PostgreSQL in a few steps. Your data is copied and the server switches automatically.",
+                ActionKey = "grow"
             });
         }
 
@@ -344,7 +344,7 @@ public static class DatabaseStatusService
                 Severity = "watch",
                 Title = "Stock history is large",
                 Detail = "High stock-movement volume is normal for busy warehouses. Prefer a server database (SQL Server / MySQL / PostgreSQL) for smoother performance.",
-                ActionKey = Db.Provider == DatabaseProvider.Sqlite ? "migrate" : null
+                ActionKey = Db.Provider == DatabaseProvider.Sqlite ? "grow" : null
             });
         }
 
@@ -354,8 +354,8 @@ public static class DatabaseStatusService
             {
                 Severity = "critical",
                 Title = "Act before the database cannot grow",
-                Detail = "Back up first, free disk space, purge old logs if needed, then migrate off SQLite or expand the server database storage.",
-                ActionKey = "backup"
+                Detail = "Back up first, free disk space, purge old logs if needed, then use Grow database… (or expand storage on your server database).",
+                ActionKey = Db.Provider == DatabaseProvider.Sqlite ? "grow" : "backup"
             });
         }
 

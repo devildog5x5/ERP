@@ -911,6 +911,49 @@ public class EnterpriseController : ApiController
     }
 
     /// <summary>
+    /// Test a target SQL Server / MySQL / PostgreSQL connection (admin). Does not switch config.
+    /// </summary>
+    [HttpPost, Route("database/test-connection")]
+    public IHttpActionResult TestDatabaseConnection([FromBody] DatabaseConnectionTestDto dto)
+    {
+        if (!RequestAuth.IsAdministrator(UserEntity))
+            return ResponseMessage(Request.CreateResponse(System.Net.HttpStatusCode.Forbidden,
+                "Only an Administrator can test database connections."));
+        if (dto == null) return BadRequest("Request body required.");
+        return Ok(DatabaseGrowService.TestConnection(dto));
+    }
+
+    /// <summary>
+    /// Grow onto SQL Server / MySQL / PostgreSQL: copy data (or empty) and switch server.json. Administrator only.
+    /// </summary>
+    [HttpPost, Route("database/grow")]
+    public IHttpActionResult GrowDatabase([FromBody] DatabaseGrowDto dto)
+    {
+        if (!RequestAuth.IsAdministrator(UserEntity))
+            return ResponseMessage(Request.CreateResponse(System.Net.HttpStatusCode.Forbidden,
+                "Only an Administrator can grow the database."));
+        if (dto == null) return BadRequest("Request body required.");
+
+        try
+        {
+            var result = DatabaseGrowService.Grow(dto);
+            try
+            {
+                using var db = Db.Create();
+                AuditService.Write(db, UserEntity?.Id, UserEntity?.UserName ?? "admin", "database-grow", "database", null,
+                    $"{result.Provider}: {result.Message}");
+                db.SaveChanges();
+            }
+            catch { /* best-effort audit on new store */ }
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.InnerException?.Message ?? ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Database type, size/fullness, characteristics, and capacity suggestions. Administrator only.
     /// </summary>
     [HttpGet, Route("database/status")]

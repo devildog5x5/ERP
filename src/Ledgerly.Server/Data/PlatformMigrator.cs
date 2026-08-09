@@ -36,10 +36,7 @@ public static class PlatformMigrator
 
         using var dest = Db.Create(targetProvider, targetCs);
         dest.Database.EnsureCreated();
-
-        if (dest.Products.Any() || dest.Suppliers.Any() || dest.Customers.Any())
-            throw new InvalidOperationException(
-                $"Target {targetProvider} database already has Coalesce data. Create/use an empty database, then retry.");
+        EnsureTargetEmpty(dest, targetProvider);
 
         var existingSettings = dest.Settings.ToList();
         if (existingSettings.Count > 0 && !dest.Products.Any())
@@ -51,13 +48,7 @@ public static class PlatformMigrator
         CopyAll(source, dest, targetProvider);
 
         if (switchConfig)
-        {
-            var cfg = ServerConfig.LoadOrCreate();
-            cfg.Provider = targetProvider;
-            cfg.ConnectionString = targetCs;
-            cfg.Save();
-            Db.Configure(cfg);
-        }
+            SwitchConfig(targetProvider, targetCs);
 
         return new MigrationResult
         {
@@ -69,11 +60,93 @@ public static class PlatformMigrator
         };
     }
 
+    /// <summary>Create schema on an empty target and switch server.json (no data copy).</summary>
+    public static MigrationResult PointToEmpty(
+        DatabaseProvider targetProvider,
+        string connectionString,
+        bool switchConfig = true)
+    {
+        if (targetProvider == DatabaseProvider.Sqlite)
+            throw new ArgumentException("Grow targets a server database (SqlServer, MySql, or PostgreSql).", nameof(targetProvider));
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new ArgumentException("Connection string is required.", nameof(connectionString));
+
+        var sourceProvider = Db.Provider.ToString();
+        var targetCs = connectionString.Trim();
+        using (var dest = Db.Create(targetProvider, targetCs))
+        {
+            dest.Database.EnsureCreated();
+            EnsureTargetEmpty(dest, targetProvider);
+        }
+
+        if (switchConfig)
+            SwitchConfig(targetProvider, targetCs);
+
+        // Seed system defaults on the new empty store.
+        DbSeeder.Seed(includeDemoData: false);
+
+        using var verify = Db.Create();
+        return new MigrationResult
+        {
+            SourceProvider = sourceProvider,
+            TargetProvider = targetProvider.ToString(),
+            ConfigUpdated = switchConfig,
+            ConfigPath = ServerConfig.ConfigPath,
+            Counts = CountSummary(verify)
+        };
+    }
+
+    private static void EnsureTargetEmpty(ErpDbContext dest, DatabaseProvider targetProvider)
+    {
+        if (dest.Products.Any() || dest.Suppliers.Any() || dest.Customers.Any() || dest.Users.Any())
+            throw new InvalidOperationException(
+                $"Target {targetProvider} database already has Coalesce data. Create/use an empty database, then retry.");
+    }
+
+    private static void SwitchConfig(DatabaseProvider targetProvider, string targetCs)
+    {
+        var cfg = ServerConfig.LoadOrCreate();
+        cfg.Provider = targetProvider;
+        cfg.ConnectionString = targetCs;
+        cfg.Save();
+        Db.Configure(cfg);
+    }
+
     public static void CopyAll(ErpDbContext source, ErpDbContext dest, DatabaseProvider destProvider)
     {
+        CopyTable(dest, destProvider, "Roles",
+            source.Roles.AsNoTracking().ToList(),
+            rows => dest.Roles.AddRange(rows.Select(r => new Role
+            {
+                Id = r.Id, Name = r.Name, Permissions = r.Permissions
+            })));
+
+        CopyTable(dest, destProvider, "Users",
+            source.Users.AsNoTracking().ToList(),
+            rows => dest.Users.AddRange(rows.Select(u => new AppUser
+            {
+                Id = u.Id, UserName = u.UserName, DisplayName = u.DisplayName,
+                PasswordHash = u.PasswordHash, PasswordSalt = u.PasswordSalt,
+                RoleId = u.RoleId, IsActive = u.IsActive, CreatedAt = u.CreatedAt
+            })));
+
         CopyTable(dest, destProvider, "CompanySettings",
             source.Settings.AsNoTracking().ToList(),
             rows => dest.Settings.AddRange(CloneSettings(rows)));
+
+        CopyTable(dest, destProvider, "Locations",
+            source.Locations.AsNoTracking().ToList(),
+            rows => dest.Locations.AddRange(rows.Select(l => new Location
+            {
+                Id = l.Id, Code = l.Code, Name = l.Name, Bin = l.Bin, IsActive = l.IsActive
+            })));
+
+        CopyTable(dest, destProvider, "TaxCodes",
+            source.TaxCodes.AsNoTracking().ToList(),
+            rows => dest.TaxCodes.AddRange(rows.Select(t => new TaxCode
+            {
+                Id = t.Id, Code = t.Code, Name = t.Name, Rate = t.Rate, IsActive = t.IsActive
+            })));
 
         CopyTable(dest, destProvider, "Suppliers",
             source.Suppliers.AsNoTracking().ToList(),
@@ -111,6 +184,30 @@ public static class PlatformMigrator
             source.StockMovements.AsNoTracking().ToList(),
             rows => dest.StockMovements.AddRange(rows.Select(CloneMovement)));
 
+        CopyTable(dest, destProvider, "CrmLeads",
+            source.CrmLeads.AsNoTracking().ToList(),
+            rows => dest.CrmLeads.AddRange(rows.Select(CloneLead)));
+
+        CopyTable(dest, destProvider, "CrmAccounts",
+            source.CrmAccounts.AsNoTracking().ToList(),
+            rows => dest.CrmAccounts.AddRange(rows.Select(CloneCrmAccount)));
+
+        CopyTable(dest, destProvider, "CrmContacts",
+            source.CrmContacts.AsNoTracking().ToList(),
+            rows => dest.CrmContacts.AddRange(rows.Select(CloneCrmContact)));
+
+        CopyTable(dest, destProvider, "CrmOpportunities",
+            source.CrmOpportunities.AsNoTracking().ToList(),
+            rows => dest.CrmOpportunities.AddRange(rows.Select(CloneOpportunity)));
+
+        CopyTable(dest, destProvider, "CrmActivities",
+            source.CrmActivities.AsNoTracking().ToList(),
+            rows => dest.CrmActivities.AddRange(rows.Select(CloneActivity)));
+
+        CopyTable(dest, destProvider, "CrmNotes",
+            source.CrmNotes.AsNoTracking().ToList(),
+            rows => dest.CrmNotes.AddRange(rows.Select(CloneNote)));
+
         if (destProvider == DatabaseProvider.PostgreSql)
             ResetPostgresSequences(dest);
     }
@@ -145,9 +242,11 @@ public static class PlatformMigrator
     {
         foreach (var table in new[]
                  {
-                     "CompanySettings", "Suppliers", "Customers", "Products",
+                     "Roles", "Users", "CompanySettings", "Locations", "TaxCodes",
+                     "Suppliers", "Customers", "Products",
                      "PurchaseOrders", "PurchaseOrderLines", "SalesOrders", "SalesOrderLines",
-                     "Reminders", "StockMovements"
+                     "Reminders", "StockMovements",
+                     "CrmLeads", "CrmAccounts", "CrmContacts", "CrmOpportunities", "CrmActivities", "CrmNotes"
                  })
         {
             try
@@ -169,7 +268,20 @@ public static class PlatformMigrator
             CompanyName = s.CompanyName,
             DefaultTaxRate = s.DefaultTaxRate,
             Currency = s.Currency,
-            ReceiptFooter = s.ReceiptFooter
+            ReceiptFooter = s.ReceiptFooter,
+            Address = s.Address,
+            Phone = s.Phone,
+            Email = s.Email,
+            SmtpHost = s.SmtpHost,
+            SmtpPort = s.SmtpPort,
+            SmtpUsername = s.SmtpUsername,
+            SmtpPassword = s.SmtpPassword,
+            SmtpEnableSsl = s.SmtpEnableSsl,
+            SmtpFrom = s.SmtpFrom,
+            PoApprovalThreshold = s.PoApprovalThreshold,
+            RequireLogin = s.RequireLogin,
+            DefaultLocationId = s.DefaultLocationId,
+            FiscalYearStart = s.FiscalYearStart
         }).ToList();
 
     private static Supplier CloneSupplier(Supplier s) => new()
@@ -231,16 +343,64 @@ public static class PlatformMigrator
         Notes = m.Notes, CreatedAt = m.CreatedAt
     };
 
+    private static CrmLead CloneLead(CrmLead e) => new()
+    {
+        Id = e.Id, Name = e.Name, CompanyName = e.CompanyName, Email = e.Email, Phone = e.Phone,
+        Source = e.Source, Status = e.Status, OwnerUserId = e.OwnerUserId, CreatedAt = e.CreatedAt,
+        ConvertedAccountId = e.ConvertedAccountId, ConvertedCustomerId = e.ConvertedCustomerId
+    };
+
+    private static CrmAccount CloneCrmAccount(CrmAccount e) => new()
+    {
+        Id = e.Id, Name = e.Name, CustomerId = e.CustomerId, Industry = e.Industry, Website = e.Website,
+        BillingEmail = e.BillingEmail, IsActive = e.IsActive, OwnerUserId = e.OwnerUserId, CreatedAt = e.CreatedAt
+    };
+
+    private static CrmContact CloneCrmContact(CrmContact e) => new()
+    {
+        Id = e.Id, AccountId = e.AccountId, LeadId = e.LeadId, FirstName = e.FirstName, LastName = e.LastName,
+        Email = e.Email, Phone = e.Phone, Title = e.Title, IsPrimary = e.IsPrimary, IsActive = e.IsActive
+    };
+
+    private static CrmOpportunity CloneOpportunity(CrmOpportunity e) => new()
+    {
+        Id = e.Id, AccountId = e.AccountId, PrimaryContactId = e.PrimaryContactId, Name = e.Name, Stage = e.Stage,
+        Amount = e.Amount, ExpectedClose = e.ExpectedClose, OwnerUserId = e.OwnerUserId,
+        SalesOrderId = e.SalesOrderId, LostReason = e.LostReason, CreatedAt = e.CreatedAt
+    };
+
+    private static CrmActivity CloneActivity(CrmActivity e) => new()
+    {
+        Id = e.Id, ActivityType = e.ActivityType, Subject = e.Subject, Body = e.Body, Status = e.Status,
+        DueAt = e.DueAt, CompletedAt = e.CompletedAt, OwnerUserId = e.OwnerUserId,
+        AccountId = e.AccountId, ContactId = e.ContactId, LeadId = e.LeadId, OpportunityId = e.OpportunityId
+    };
+
+    private static CrmNote CloneNote(CrmNote e) => new()
+    {
+        Id = e.Id, Body = e.Body, AuthorUserId = e.AuthorUserId, CreatedAt = e.CreatedAt,
+        AccountId = e.AccountId, ContactId = e.ContactId, LeadId = e.LeadId, OpportunityId = e.OpportunityId
+    };
+
     private static Dictionary<string, int> CountSummary(ErpDbContext db) => new()
     {
+        ["users"] = db.Users.Count(),
         ["suppliers"] = db.Suppliers.Count(),
         ["customers"] = db.Customers.Count(),
         ["products"] = db.Products.Count(),
         ["purchaseOrders"] = db.PurchaseOrders.Count(),
         ["salesOrders"] = db.SalesOrders.Count(),
+        ["crmLeads"] = SafeCount(() => db.CrmLeads.Count()),
+        ["crmAccounts"] = SafeCount(() => db.CrmAccounts.Count()),
         ["reminders"] = db.Reminders.Count(),
         ["stockMovements"] = db.StockMovements.Count()
     };
+
+    private static int SafeCount(Func<int> count)
+    {
+        try { return count(); }
+        catch { return 0; }
+    }
 }
 
 public sealed class MigrationResult

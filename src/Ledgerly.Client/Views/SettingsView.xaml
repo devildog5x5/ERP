@@ -27,7 +27,7 @@
             <TextBlock Text="Database platform" FontWeight="SemiBold" FontSize="16" Margin="0,8,0,10"/>
             <TextBlock x:Name="DbPlatformText" TextWrapping="Wrap" Foreground="#2A3A48" Margin="0,0,0,8"/>
             <TextBlock TextWrapping="Wrap" Foreground="#667888" Margin="0,0,0,12"
-                       Text="Default is local SQLite. For multi-user or hosted backends, stop the server and migrate or point config at SQL Server, MySQL/MariaDB, or PostgreSQL (Coalesce.Server.exe migrate / set-db, or edit server.json). The client and API stay the same — only the database changes. See README → Database providers."/>
+                       Text="Default is local SQLite. When you need more capacity or multi-user access, use Grow database… (Administrator) to move to SQL Server, MySQL, or PostgreSQL — no command line required."/>
 
             <Border x:Name="AdminDbStatusPanel" Visibility="Collapsed" Margin="0,0,0,16"
                     BorderBrush="#D0E4F5" BorderThickness="1" Background="#F5FAFE" CornerRadius="10" Padding="14">
@@ -41,7 +41,9 @@
                                    Text="Loading database status…"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Button Content="Database status…" Style="{StaticResource PrimaryButton}"
+                        <Button Content="Grow database…" Style="{StaticResource PrimaryButton}"
+                                Click="GrowDatabase_Click" Margin="0,0,8,0"/>
+                        <Button Content="Database status…" Style="{StaticResource SecondaryButton}"
                                 Click="DatabaseStatus_Click" Margin="0,0,8,0"/>
                         <Button Content="Refresh status" Style="{StaticResource SecondaryButton}"
                                 Click="RefreshDbStatus_Click"/>
