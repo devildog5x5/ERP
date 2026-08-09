@@ -35,13 +35,20 @@
                 <Button Content="Refresh platform info" Style="{StaticResource SecondaryButton}" Click="RefreshPlatform_Click"/>
             </StackPanel>
 
-            <StackPanel x:Name="AdminDangerPanel" Visibility="Collapsed" Margin="0,28,0,0">
-                <TextBlock Text="Danger zone" FontWeight="SemiBold" FontSize="16" Foreground="#B42318" Margin="0,0,0,8"/>
-                <TextBlock TextWrapping="Wrap" Foreground="#667888" Margin="0,0,0,12"
-                           Text="Refresh database wipes all business data, recreates the schema, and reseeds demo defaults. A backup is taken first. Administrator only. You will need to sign in again (admin / admin)."/>
-                <Button Content="Refresh database…" Style="{StaticResource DangerButton}"
-                        HorizontalAlignment="Left" Click="RefreshDatabase_Click"/>
-            </StackPanel>
+            <Border x:Name="AdminDangerPanel" Visibility="Collapsed" Margin="0,28,0,0"
+                    BorderBrush="#FECACA" BorderThickness="1" Background="#FEF2F2" CornerRadius="10" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="Danger zone" FontWeight="SemiBold" FontSize="16" Foreground="#B42318" Margin="0,0,0,8"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="#667888" Margin="0,0,0,12"
+                               Text="Refresh database wipes all business data, recreates the schema, and reseeds demo defaults. A backup is taken first. Administrator only. You must complete three confirmations before it runs. You will need to sign in again (admin / admin)."/>
+                    <Button x:Name="RefreshDatabaseBtn" Content="Refresh database…" Style="{StaticResource DangerButton}"
+                            HorizontalAlignment="Left" Click="RefreshDatabase_Click"/>
+                    <StackPanel x:Name="RefreshProgressPanel" Visibility="Collapsed" Margin="0,14,0,0">
+                        <TextBlock x:Name="RefreshProgressText" Text="Preparing…" Foreground="#2A3A48" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                        <ProgressBar x:Name="RefreshProgressBar" Height="18" Minimum="0" Maximum="100" Value="0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
 
             <TextBlock x:Name="StatusText" Margin="0,14,0,0" Foreground="#667888" TextWrapping="Wrap"/>
         </StackPanel>

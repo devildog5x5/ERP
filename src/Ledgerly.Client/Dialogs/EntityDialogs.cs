@@ -366,6 +366,123 @@ public static class EntityDialogs
     public static bool Confirm(Window owner, string title, string message) =>
         MessageBox.Show(owner, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 
+    /// <summary>
+    /// Triple confirmation for database refresh: two explicit checks + typed phrase.
+    /// Returns true only when all three are satisfied and the user clicks Refresh.
+    /// </summary>
+    public static bool ConfirmDatabaseRefresh(Window? owner)
+    {
+        var dialog = new Window
+        {
+            Title = "Confirm database refresh — 3 steps required",
+            Owner = owner,
+            Width = 520,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = owner != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen,
+            ResizeMode = ResizeMode.NoResize,
+            Background = Brushes.White,
+            Topmost = true,
+            ShowInTaskbar = false
+        };
+
+        const string requiredPhrase = "REFRESH DATABASE";
+        var check1 = new CheckBox
+        {
+            Content = "Step 1 of 3 — I understand this will ERASE all products, orders, partners, finance data, and users.",
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+        var check2 = new CheckBox
+        {
+            Content = "Step 2 of 3 — I understand this cannot be undone in the app (only by restoring a backup).",
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+        var phraseBox = new TextBox { Padding = new Thickness(8, 6, 8, 6), Margin = new Thickness(0, 4, 0, 0) };
+        var phraseHint = new TextBlock
+        {
+            Text = $"Step 3 of 3 — Type {requiredPhrase} exactly (case-sensitive).",
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)),
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+
+        var proceed = new Button
+        {
+            Content = "Refresh database",
+            Style = (Style)Application.Current.FindResource("DangerButton"),
+            IsEnabled = false,
+            MinWidth = 140,
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+        var cancel = new Button
+        {
+            Content = "Cancel",
+            Style = (Style)Application.Current.FindResource("SecondaryButton"),
+            IsCancel = true,
+            MinWidth = 90
+        };
+
+        void UpdateProceed()
+        {
+            proceed.IsEnabled =
+                check1.IsChecked == true &&
+                check2.IsChecked == true &&
+                string.Equals(phraseBox.Text.Trim(), requiredPhrase, StringComparison.Ordinal);
+        }
+
+        check1.Checked += (_, _) => UpdateProceed();
+        check1.Unchecked += (_, _) => UpdateProceed();
+        check2.Checked += (_, _) => UpdateProceed();
+        check2.Unchecked += (_, _) => UpdateProceed();
+        phraseBox.TextChanged += (_, _) => UpdateProceed();
+
+        proceed.Click += (_, _) =>
+        {
+            if (!proceed.IsEnabled) return;
+            dialog.DialogResult = true;
+            dialog.Close();
+        };
+        cancel.Click += (_, _) =>
+        {
+            dialog.DialogResult = false;
+            dialog.Close();
+        };
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 18, 0, 0)
+        };
+        buttons.Children.Add(proceed);
+        buttons.Children.Add(cancel);
+
+        var panel = new StackPanel { Margin = new Thickness(22) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Triple confirmation required before the database is wiped.",
+            FontWeight = FontWeights.SemiBold,
+            FontSize = 15,
+            Foreground = new SolidColorBrush(Color.FromRgb(0xB4, 0x23, 0x18)),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 14)
+        });
+        panel.Children.Add(new TextBlock
+        {
+            Text = "A backup is created first. You will need to sign in again as admin / admin afterward.",
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)),
+            Margin = new Thickness(0, 0, 0, 16)
+        });
+        panel.Children.Add(check1);
+        panel.Children.Add(check2);
+        panel.Children.Add(phraseHint);
+        panel.Children.Add(phraseBox);
+        panel.Children.Add(buttons);
+        dialog.Content = panel;
+
+        return dialog.ShowDialog() == true;
+    }
+
     public static decimal? PromptDecimal(Window owner, string title, string message, string defaultValue = "1")
     {
         var box = Field(defaultValue);

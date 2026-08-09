@@ -12,11 +12,11 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined (Client + Server)** | Full installer with options for Client only, Server only, or both | [LedgerlySetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.5.0/LedgerlySetup.exe) |
-| **Client only** | Desktop UI (connects to a running Ledgerly Server) | [LedgerlyClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.5.0/LedgerlyClientSetup.exe) |
-| **Server only** | API / database host | [LedgerlyServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.5.0/LedgerlyServerSetup.exe) |
+| **Combined (Client + Server)** | Full installer with options for Client only, Server only, or both | [LedgerlySetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.5.1/LedgerlySetup.exe) |
+| **Client only** | Desktop UI (connects to a running Ledgerly Server) | [LedgerlyClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.5.1/LedgerlyClientSetup.exe) |
+| **Server only** | API / database host | [LedgerlyServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.5.1/LedgerlyServerSetup.exe) |
 
-- Latest release: [v1.5.0](https://github.com/devildog5x5/ERP/releases/tag/v1.5.0)
+- Latest release: [v1.5.1](https://github.com/devildog5x5/ERP/releases/tag/v1.5.1)
 - Default login after install: `admin` / `admin`
 - Server listens at `http://127.0.0.1:8000` by default
 - Requires **64-bit Windows** and **[.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48)**

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Ledgerly.Client.Dialogs;
 using Ledgerly.Client.Services;
 using Ledgerly.Shared;
@@ -132,38 +133,29 @@ public partial class SettingsView : UserControl
         }
 
         var owner = OwnerWindow;
-        // Confirmation 1 of 3
-        if (MessageBox.Show(owner,
-                "Refresh database will ERASE all products, orders, partners, finance data, and users, then reload demo defaults.\n\nA backup is created first.\n\nContinue?",
-                "Refresh database (1/3)",
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            return;
-
-        // Confirmation 2 of 3
-        if (MessageBox.Show(owner,
-                "This cannot be undone from the app (except by restoring a backup).\n\nAre you absolutely sure you want to wipe the database?",
-                "Refresh database (2/3)",
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            return;
-
-        // Confirmation 3 of 3 — typed phrase
-        var typed = EntityDialogs.FieldPrompt(owner!, "Type REFRESH DATABASE to confirm");
-        if (!string.Equals(typed?.Trim(), "REFRESH DATABASE", StringComparison.Ordinal))
+        // Modal requires all 3 confirmations before returning true.
+        if (!EntityDialogs.ConfirmDatabaseRefresh(owner))
         {
-            StatusText.Text = "Database refresh cancelled — confirmation phrase did not match.";
+            StatusText.Text = "Database refresh cancelled — triple confirmation was not completed.";
             return;
         }
 
         try
         {
-            StatusText.Text = "Refreshing database…";
+            SetRefreshBusy(true);
+            await SetProgressAsync(10, "Starting database refresh…");
+            await SetProgressAsync(25, "Creating backup on server…");
+            await SetProgressAsync(45, "Wiping database and reseeding…", indeterminate: true);
+
             var result = await App.Api.RefreshDatabaseAsync(new DatabaseRefreshDto
             {
                 Confirmation = "REFRESH DATABASE"
             });
 
+            await SetProgressAsync(90, "Finalizing…");
             App.Api.SetAuthToken(null);
             Session.Clear();
+            await SetProgressAsync(100, "Database refreshed.");
 
             MessageBox.Show(owner,
                 (result?.Message ?? "Database refreshed.") +
@@ -181,6 +173,42 @@ public partial class SettingsView : UserControl
             await LoadAsync();
             StatusText.Text = "Database refreshed. Signed in again.";
         }
-        catch (Exception ex) { EntityDialogs.ShowError(ex); }
+        catch (Exception ex)
+        {
+            StatusText.Text = "Database refresh failed.";
+            EntityDialogs.ShowError(ex);
+        }
+        finally
+        {
+            SetRefreshBusy(false);
+        }
+    }
+
+    private void SetRefreshBusy(bool busy)
+    {
+        RefreshDatabaseBtn.IsEnabled = !busy;
+        RefreshProgressPanel.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+        if (busy)
+        {
+            RefreshProgressBar.IsIndeterminate = true;
+            RefreshProgressBar.Value = 0;
+            RefreshProgressText.Text = "Working…";
+        }
+        else
+        {
+            RefreshProgressBar.IsIndeterminate = false;
+            RefreshProgressBar.Value = 0;
+        }
+    }
+
+    private async Task SetProgressAsync(double value, string message, bool indeterminate = false)
+    {
+        RefreshProgressBar.IsIndeterminate = indeterminate;
+        if (!indeterminate)
+            RefreshProgressBar.Value = Math.Max(0, Math.Min(100, value));
+        RefreshProgressText.Text = message;
+        StatusText.Text = message;
+        await Dispatcher.Yield(DispatcherPriority.Background);
+        await Task.Delay(50);
     }
 }
