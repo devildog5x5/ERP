@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using Ledgerly.Shared;
 
 namespace Ledgerly.Client.Dialogs;
@@ -461,6 +462,8 @@ public static class EntityDialogs
         var body = new StackPanel();
 
         body.Children.Add(SectionTitle("How full"));
+        body.Children.Add(BuildCapacityPiePanel(status, levelBrush));
+
         body.Children.Add(MetricLine("Database used", status.UsedDisplay));
         body.Children.Add(MetricLine("Free space", status.FreeDisplay));
         body.Children.Add(MetricLine("Capacity / volume", status.CapacityDisplay));
@@ -471,27 +474,14 @@ public static class EntityDialogs
             body.Children.Add(MetricLine("Location", status.Location!));
         body.Children.Add(MetricLine("Multi-user ready", status.MultiUserReady ? "Yes" : "No (local SQLite)"));
 
-        var bar = new ProgressBar
-        {
-            Minimum = 0,
-            Maximum = 100,
-            Height = 18,
-            Margin = new Thickness(0, 8, 0, 16),
-            Value = status.PercentFull ?? (status.CapacityLevel switch
-            {
-                "critical" => 95,
-                "high" => 80,
-                "watch" => 55,
-                _ => 20
-            })
-        };
-        body.Children.Add(bar);
-
         body.Children.Add(SectionTitle("Characteristics"));
         foreach (var c in status.Characteristics)
             body.Children.Add(Bullet(c));
 
         body.Children.Add(SectionTitle("Largest tables (row counts)"));
+        var tablePie = BuildTableSharePiePanel(status.Tables);
+        if (tablePie != null)
+            body.Children.Add(tablePie);
         foreach (var t in status.Tables.Take(10))
             body.Children.Add(MetricLine(t.Name, t.Rows.ToString("N0")));
 
@@ -567,6 +557,251 @@ public static class EntityDialogs
         TextWrapping = TextWrapping.Wrap,
         Foreground = new SolidColorBrush(Color.FromRgb(0x2A, 0x3A, 0x48))
     };
+
+    /// <summary>Compact capacity donut for Settings summary (or any host).</summary>
+    public static UIElement BuildCapacityPieChart(DatabaseStatusDto status, double size = 88)
+    {
+        var usedBrush = status.CapacityLevel switch
+        {
+            "critical" => new SolidColorBrush(Color.FromRgb(0xB4, 0x23, 0x18)),
+            "high" => new SolidColorBrush(Color.FromRgb(0xB5, 0x47, 0x08)),
+            "watch" => new SolidColorBrush(Color.FromRgb(0xCA, 0x8A, 0x04)),
+            _ => new SolidColorBrush(Color.FromRgb(0x02, 0x78, 0x4A))
+        };
+        var freeBrush = new SolidColorBrush(Color.FromRgb(0xE2, 0xE8, 0xEE));
+        var pct = ResolveCapacityPercent(status);
+        return BuildDonutChart(
+            new[]
+            {
+                ("Used", Math.Max(0.01, pct), (Brush)usedBrush),
+                ("Free", Math.Max(0.01, 100 - pct), (Brush)freeBrush)
+            },
+            $"{pct:0.#}%",
+            size);
+    }
+
+    private static FrameworkElement BuildCapacityPiePanel(DatabaseStatusDto status, Brush usedBrush)
+    {
+        var pct = ResolveCapacityPercent(status);
+        var freeBrush = new SolidColorBrush(Color.FromRgb(0xE2, 0xE8, 0xEE));
+        var pie = BuildDonutChart(
+            new[]
+            {
+                ("Used", Math.Max(0.01, pct), usedBrush),
+                ("Free", Math.Max(0.01, 100 - pct), (Brush)freeBrush)
+            },
+            $"{pct:0.#}%",
+            168);
+
+        var legend = new StackPanel { Margin = new Thickness(20, 8, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        legend.Children.Add(LegendRow(usedBrush, "Used / full", status.UsedDisplay + (status.PercentFull.HasValue ? $" ({status.PercentDisplay})" : $" (~{pct:0.#}%)")));
+        legend.Children.Add(LegendRow(freeBrush, "Free / remaining", status.FreeDisplay));
+        legend.Children.Add(new TextBlock
+        {
+            Text = status.CapacityLabel,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = usedBrush,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 10, 0, 0),
+            MaxWidth = 280
+        });
+        legend.Children.Add(new TextBlock
+        {
+            Text = status.PercentFull.HasValue
+                ? "Pie shows volume/capacity fullness."
+                : "Pie estimates fullness from database size guidance (SQLite growth bands).",
+            Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)),
+            FontSize = 11,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 6, 0, 0),
+            MaxWidth = 280
+        });
+
+        return new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 0, 0, 14),
+            Children = { pie, legend }
+        };
+    }
+
+    private static FrameworkElement? BuildTableSharePiePanel(IList<DatabaseTableStatDto> tables)
+    {
+        var top = tables.Where(t => t.Rows > 0).Take(6).ToList();
+        if (top.Count < 2) return null;
+
+        var palette = new Brush[]
+        {
+            new SolidColorBrush(Color.FromRgb(0x1D, 0x4E, 0x89)),
+            new SolidColorBrush(Color.FromRgb(0x0F, 0x76, 0x6E)),
+            new SolidColorBrush(Color.FromRgb(0x7C, 0x3A, 0xED)),
+            new SolidColorBrush(Color.FromRgb(0xB4, 0x53, 0x09)),
+            new SolidColorBrush(Color.FromRgb(0xBE, 0x12, 0x3C)),
+            new SolidColorBrush(Color.FromRgb(0x64, 0x74, 0x8B))
+        };
+        var slices = top.Select((t, i) => (t.Name, (double)t.Rows, palette[i % palette.Length])).ToArray();
+        var pie = BuildDonutChart(slices, "Rows", 140);
+        var legend = new StackPanel { Margin = new Thickness(18, 4, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        foreach (var (name, rows, brush) in slices)
+            legend.Children.Add(LegendRow(brush, name, rows.ToString("N0")));
+
+        return new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 0, 0, 12),
+            Children = { pie, legend }
+        };
+    }
+
+    private static double ResolveCapacityPercent(DatabaseStatusDto status)
+    {
+        if (status.PercentFull.HasValue)
+            return Math.Max(0, Math.Min(100, status.PercentFull.Value));
+
+        // Soft guidance when only file/db size is known (common for MySQL/Postgres metrics).
+        if (status.UsedBytes is > 0)
+        {
+            const double watch = 250L * 1024 * 1024;
+            const double high = 1024L * 1024 * 1024;
+            const double critical = 2L * 1024 * 1024 * 1024;
+            var used = (double)status.UsedBytes.Value;
+            if (used >= critical) return 95;
+            if (used >= high) return 70 + 20 * ((used - high) / (critical - high));
+            if (used >= watch) return 40 + 30 * ((used - watch) / (high - watch));
+            return Math.Max(5, 40 * (used / watch));
+        }
+
+        return status.CapacityLevel switch
+        {
+            "critical" => 95,
+            "high" => 80,
+            "watch" => 55,
+            _ => 18
+        };
+    }
+
+    private static FrameworkElement LegendRow(Brush color, string label, string value)
+    {
+        var swatch = new Ellipse
+        {
+            Width = 10,
+            Height = 10,
+            Fill = color,
+            Margin = new Thickness(0, 0, 8, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var text = new TextBlock
+        {
+            Text = $"{label}: {value}",
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = new SolidColorBrush(Color.FromRgb(0x2A, 0x3A, 0x48))
+        };
+        return new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 0, 0, 6),
+            Children = { swatch, text }
+        };
+    }
+
+    private static FrameworkElement BuildDonutChart(
+        IReadOnlyList<(string Label, double Value, Brush Fill)> slices,
+        string centerText,
+        double size)
+    {
+        var total = slices.Sum(s => s.Value);
+        if (total <= 0) total = 1;
+
+        var canvas = new Canvas { Width = size, Height = size };
+        var cx = size / 2;
+        var cy = size / 2;
+        var outer = size * 0.46;
+        var inner = size * 0.28;
+        var angle = 0.0;
+
+        foreach (var slice in slices)
+        {
+            var sweep = 360.0 * (slice.Value / total);
+            if (sweep <= 0.001) continue;
+            // Full circle as ellipse (ArcSegment can't span exactly 360° reliably).
+            if (sweep >= 359.9)
+            {
+                var outerRing = new Ellipse { Width = outer * 2, Height = outer * 2, Fill = slice.Fill };
+                Canvas.SetLeft(outerRing, cx - outer);
+                Canvas.SetTop(outerRing, cy - outer);
+                canvas.Children.Add(outerRing);
+                var hole = new Ellipse { Width = inner * 2, Height = inner * 2, Fill = Brushes.White };
+                Canvas.SetLeft(hole, cx - inner);
+                Canvas.SetTop(hole, cy - inner);
+                canvas.Children.Add(hole);
+                angle += sweep;
+                continue;
+            }
+
+            var path = new Path { Fill = slice.Fill, Data = DonutSliceGeometry(cx, cy, outer, inner, angle, sweep) };
+            canvas.Children.Add(path);
+            angle += sweep;
+        }
+
+        var label = new TextBlock
+        {
+            Text = centerText,
+            FontWeight = FontWeights.SemiBold,
+            FontSize = size >= 140 ? 16 : 12,
+            Foreground = new SolidColorBrush(Color.FromRgb(0x15, 0x20, 0x2B)),
+            TextAlignment = TextAlignment.Center
+        };
+        label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Canvas.SetLeft(label, cx - label.DesiredSize.Width / 2);
+        Canvas.SetTop(label, cy - label.DesiredSize.Height / 2);
+        canvas.Children.Add(label);
+
+        return new Border
+        {
+            Child = canvas,
+            Width = size,
+            Height = size,
+            HorizontalAlignment = HorizontalAlignment.Left
+        };
+    }
+
+    private static Geometry DonutSliceGeometry(double cx, double cy, double outerR, double innerR, double startDeg, double sweepDeg)
+    {
+        var startOuter = Polar(cx, cy, outerR, startDeg);
+        var endOuter = Polar(cx, cy, outerR, startDeg + sweepDeg);
+        var startInner = Polar(cx, cy, innerR, startDeg);
+        var endInner = Polar(cx, cy, innerR, startDeg + sweepDeg);
+        var large = sweepDeg > 180;
+
+        var fig = new PathFigure { StartPoint = startOuter, IsClosed = true };
+        fig.Segments.Add(new ArcSegment
+        {
+            Point = endOuter,
+            Size = new Size(outerR, outerR),
+            IsLargeArc = large,
+            SweepDirection = SweepDirection.Clockwise
+        });
+        fig.Segments.Add(new LineSegment { Point = endInner });
+        fig.Segments.Add(new ArcSegment
+        {
+            Point = startInner,
+            Size = new Size(innerR, innerR),
+            IsLargeArc = large,
+            SweepDirection = SweepDirection.Counterclockwise
+        });
+
+        var geo = new PathGeometry();
+        geo.Figures.Add(fig);
+        geo.Freeze();
+        return geo;
+    }
+
+    private static Point Polar(double cx, double cy, double radius, double angleDeg)
+    {
+        var rad = (angleDeg - 90) * Math.PI / 180.0;
+        return new Point(cx + radius * Math.Cos(rad), cy + radius * Math.Sin(rad));
+    }
 
     public static bool ConfirmDelete(Window owner, string label) =>
         MessageBox.Show(owner, $"Delete {label}?\nThis cannot be undone.", "Confirm delete",

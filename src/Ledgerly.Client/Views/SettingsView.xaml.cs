@@ -201,6 +201,7 @@ public partial class SettingsView : UserControl
             "watch" => 1,
             _ => 0
         }).FirstOrDefault();
+        DbStatusPieHost.Content = EntityDialogs.BuildCapacityPieChart(status, 88);
         DbStatusSummaryText.Text =
             $"{status.ProviderLabel} · {status.CapacityLabel}\n" +
             $"Used {status.UsedDisplay}" +
