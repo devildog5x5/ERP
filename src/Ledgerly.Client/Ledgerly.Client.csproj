@@ -10,7 +10,7 @@
     <AssemblyName>Coalesce.Client</AssemblyName>
     <AssemblyTitle>Coalesce.ERP.CRM Client</AssemblyTitle>
     <Product>Coalesce.ERP.CRM</Product>
-    <ApplicationIcon />
+    <ApplicationIcon>Assets\coalesce.ico</ApplicationIcon>
     <SupportedOSPlatform>windows7.0</SupportedOSPlatform>
     <PlatformTarget>x64</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
@@ -23,5 +23,9 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Net.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\coalesce-icon.png" />
+    <Resource Include="Assets\coalesce.ico" />
   </ItemGroup>
 </Project>

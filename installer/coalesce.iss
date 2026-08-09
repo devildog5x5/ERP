@@ -4,7 +4,7 @@
   #define Package "combined"
 #endif
 
-#define MyAppVersion "1.6.0"
+#define MyAppVersion "1.6.1"
 #define MyAppPublisher "Coalesce"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
 #define MyAppName "Coalesce.ERP.CRM"
@@ -46,12 +46,13 @@ OutputBaseFilename={#OutputName}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=..\assets\coalesce.ico
+UninstallDisplayIcon={#UninstallIcon}
 MinVersion=6.1sp1
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-UninstallDisplayIcon={#UninstallIcon}
 VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#VersionDesc}

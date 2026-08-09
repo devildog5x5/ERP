@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:svc="clr-namespace:Ledgerly.Client.Services"
         Title="Coalesce.ERP.CRM"
+        Icon="pack://application:,,,/Assets/coalesce.ico"
         Height="780" Width="1280"
         MinHeight="640" MinWidth="980"
         Background="{StaticResource BgBrush}"
@@ -19,9 +20,10 @@
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Margin="4,8,4,24">
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="42" Height="42" CornerRadius="12" Background="{StaticResource BrandBrush}" Margin="0,0,12,0">
-                            <TextBlock Text="C" Foreground="White" FontSize="20" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Width="42" Height="42" CornerRadius="10" Background="#000000" Margin="0,0,12,0"
+                                BorderBrush="#2A3540" BorderThickness="1" ClipToBounds="True">
+                            <Image Source="pack://application:,,,/Assets/coalesce-icon.png" Stretch="UniformToFill"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                         </Border>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="Coalesce" Foreground="White" FontSize="18" FontWeight="SemiBold"/>
