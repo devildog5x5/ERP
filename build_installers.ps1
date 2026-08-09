@@ -1,44 +1,52 @@
-# Build Ledgerly Windows 10+ executables and combined installer
+# Build Ledgerly C# (.NET Framework 4.8) binaries and combined Inno Setup installer.
+# Requires: .NET SDK + net48 targeting pack, Inno Setup 6 (ISCC.exe).
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $root
 
-$python = Join-Path $root ".venv\Scripts\python.exe"
 $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-
-if (-not (Test-Path $python)) {
-    throw "Virtual environment not found. Create it and install requirements first."
-}
 if (-not (Test-Path $iscc)) {
-    throw "Inno Setup 6 not found at $iscc"
+    throw "Inno Setup 6 not found at $iscc. Install from https://jrsoftware.org/isinfo.php"
 }
 
-Write-Host "==> Ensuring PyInstaller is installed"
-& $python -m pip install -q pyinstaller
+$serverOut = Join-Path $root "dist\LedgerlyServer"
+$clientOut = Join-Path $root "dist\LedgerlyClient"
+$installerOut = Join-Path $root "dist\installers"
+$publishDir = Join-Path $root "installers"
 
-Write-Host "==> Cleaning previous build outputs"
-Remove-Item -Recurse -Force dist\LedgerlyServer, dist\LedgerlyClient, build -ErrorAction SilentlyContinue
-Remove-Item -Force dist\installers\*.exe -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force -Path dist\installers, installers | Out-Null
+Write-Host "==> Cleaning previous packaging outputs"
+Remove-Item -Recurse -Force $serverOut, $clientOut -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $installerOut "LedgerlySetup.exe") -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path $serverOut, $clientOut, $installerOut, $publishDir | Out-Null
 
-Write-Host "==> Building LedgerlyServer executable (Windows 10+)"
-& $python -m PyInstaller --noconfirm --clean --distpath dist --workpath build\server bundle\ledgerly-server.spec
-if ($LASTEXITCODE -ne 0) { throw "Server PyInstaller build failed" }
+Write-Host "==> Publishing Ledgerly.Server (net48 / x64 Release)"
+dotnet publish "src\Ledgerly.Server\Ledgerly.Server.csproj" -c Release -o $serverOut --verbosity minimal
+if ($LASTEXITCODE -ne 0) { throw "Server publish failed" }
 
-Write-Host "==> Building LedgerlyClient executable (Windows 10+)"
-& $python -m PyInstaller --noconfirm --clean --distpath dist --workpath build\client bundle\ledgerly-client.spec
-if ($LASTEXITCODE -ne 0) { throw "Client PyInstaller build failed" }
+Write-Host "==> Publishing Ledgerly.Client (net48-windows / x64 Release)"
+dotnet publish "src\Ledgerly.Client\Ledgerly.Client.csproj" -c Release -o $clientOut --verbosity minimal
+if ($LASTEXITCODE -ne 0) { throw "Client publish failed" }
+
+if (-not (Test-Path (Join-Path $serverOut "Ledgerly.Server.exe"))) {
+    throw "Missing Ledgerly.Server.exe in $serverOut"
+}
+if (-not (Test-Path (Join-Path $clientOut "Ledgerly.Client.exe"))) {
+    throw "Missing Ledgerly.Client.exe in $clientOut"
+}
 
 Write-Host "==> Compiling combined LedgerlySetup installer"
-& $iscc installer\ledgerly.iss
-if ($LASTEXITCODE -ne 0) { throw "Combined Inno Setup compile failed" }
+& $iscc "installer\ledgerly.iss"
+if ($LASTEXITCODE -ne 0) { throw "Inno Setup compile failed" }
 
-Write-Host "==> Publishing installer to installers\"
-Remove-Item -Force installers\LedgerlyServerSetup.exe, installers\LedgerlyClientSetup.exe -ErrorAction SilentlyContinue
-Copy-Item dist\installers\LedgerlySetup.exe installers\ -Force
+$setup = Join-Path $installerOut "LedgerlySetup.exe"
+if (-not (Test-Path $setup)) { throw "Installer not produced: $setup" }
+
+Copy-Item $setup (Join-Path $publishDir "LedgerlySetup.exe") -Force
 
 Write-Host ""
-Write-Host "Installer ready (Windows 10+):"
-Get-ChildItem installers\LedgerlySetup.exe | ForEach-Object {
-    Write-Host "  $($_.FullName)  ($([math]::Round($_.Length/1MB,1)) MB)"
+Write-Host "Installer ready (Windows 7 SP1+ / .NET Framework 4.8):"
+Get-Item (Join-Path $publishDir "LedgerlySetup.exe") | ForEach-Object {
+    Write-Host ("  {0}  ({1:N1} MB)" -f $_.FullName, ($_.Length / 1MB))
 }
+Write-Host "  Server payload: $serverOut"
+Write-Host "  Client payload: $clientOut"

@@ -12,14 +12,16 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined (Client + Server)** | Full installer with options for Client only, Server only, or both | [LedgerlySetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.1.0/LedgerlySetup.exe) |
-| **Client only** | Desktop UI (connects to a running Ledgerly Server) | [LedgerlyClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.0.0/LedgerlyClientSetup.exe) |
-| **Server only** | API / database host | [LedgerlyServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.0.0/LedgerlyServerSetup.exe) |
+| **Combined (Client + Server)** | C#/.NET Framework 4.8 installer with options for Client only, Server only, or both | [LedgerlySetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.3.0/LedgerlySetup.exe) |
+| **Client only** (legacy Python build) | Older desktop UI installer | [LedgerlyClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.0.0/LedgerlyClientSetup.exe) |
+| **Server only** (legacy Python build) | Older API installer | [LedgerlyServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.0.0/LedgerlyServerSetup.exe) |
 
-- Latest combined release: [v1.1.0](https://github.com/devildog5x5/ERP/releases/tag/v1.1.0)
-- Separate client/server installers: [v1.0.0](https://github.com/devildog5x5/ERP/releases/tag/v1.0.0)
+- Latest combined release (current C# app): [v1.3.0](https://github.com/devildog5x5/ERP/releases/tag/v1.3.0)
+- Legacy separate installers: [v1.0.0](https://github.com/devildog5x5/ERP/releases/tag/v1.0.0)
 - Default login after install: `admin` / `admin`
 - Server listens at `http://127.0.0.1:8000` by default
+- Requires **64-bit Windows** and **[.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48)**
+- Rebuild locally: `powershell -File .\build_installers.ps1` → `installers\LedgerlySetup.exe`
 
 ## Requirements
 
