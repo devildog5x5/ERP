@@ -17,7 +17,7 @@ public class ErpController : ApiController
         DatabaseProvider = Db.Provider.ToString(),
         Database = new ServerConfig { Provider = Db.Provider, ConnectionString = Db.ConnectionString }.Describe(),
         ConfigPath = Db.ConfigPath,
-        CanScaleOut = Db.Provider == DatabaseProvider.SqlServer
+        CanScaleOut = Db.IsServerDatabase(Db.Provider)
     };
 
     [HttpGet, Route("settings")]

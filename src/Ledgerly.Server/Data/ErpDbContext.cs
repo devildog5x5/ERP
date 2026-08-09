@@ -206,10 +206,24 @@ public static class Db
     public static ErpDbContext Create(DatabaseProvider provider, string connectionString)
     {
         var builder = new DbContextOptionsBuilder<ErpDbContext>();
-        if (provider == DatabaseProvider.SqlServer)
-            builder.UseSqlServer(connectionString);
-        else
-            builder.UseSqlite(connectionString);
+        switch (provider)
+        {
+            case DatabaseProvider.SqlServer:
+                builder.UseSqlServer(connectionString);
+                break;
+            case DatabaseProvider.MySql:
+                builder.UseMySql(connectionString);
+                break;
+            case DatabaseProvider.PostgreSql:
+                builder.UseNpgsql(connectionString);
+                break;
+            default:
+                builder.UseSqlite(connectionString);
+                break;
+        }
         return new ErpDbContext(builder.Options);
     }
+
+    public static bool IsServerDatabase(DatabaseProvider provider) =>
+        provider is DatabaseProvider.SqlServer or DatabaseProvider.MySql or DatabaseProvider.PostgreSql;
 }

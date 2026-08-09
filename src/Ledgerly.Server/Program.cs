@@ -22,6 +22,11 @@ internal static class Program
         if (args.Length > 0 && args[0].Equals("migrate", StringComparison.OrdinalIgnoreCase))
             return RunMigrate(args.Skip(1).ToArray());
 
+        if (args.Length > 0 &&
+            (args[0].Equals("set-db", StringComparison.OrdinalIgnoreCase) ||
+             args[0].Equals("setdb", StringComparison.OrdinalIgnoreCase)))
+            return RunSetDb(args.Skip(1).ToArray());
+
         return RunServer(includeDemoData: HasFlag(args, "--demo"));
     }
 
@@ -46,8 +51,9 @@ internal static class Program
             Console.WriteLine("Press Ctrl+C to stop" +
                               (CanReadConsoleInput() ? ", or Enter." : "."));
             Console.WriteLine();
-            Console.WriteLine("Grow later with:");
-            Console.WriteLine("  Coalesce.Server.exe migrate --connection \"Server=.;Database=Coalesce;Trusted_Connection=True;\"");
+            Console.WriteLine("Database options: Sqlite (default), SqlServer, MySql, PostgreSql");
+            Console.WriteLine("  Coalesce.Server.exe migrate --provider SqlServer --connection \"...\"");
+            Console.WriteLine("  Coalesce.Server.exe set-db --provider MySql --connection \"...\"");
 
             using (WebApp.Start<Startup>(Db.ListenUrl))
             {
@@ -86,8 +92,6 @@ internal static class Program
             exit.Set();
         };
 
-        // Only wait on Enter when a real console is attached. Redirected/closed
-        // stdin makes ReadLine return immediately and would stop the host.
         if (CanReadConsoleInput())
         {
             ThreadPool.QueueUserWorkItem(_ =>
@@ -104,6 +108,7 @@ internal static class Program
     private static int RunMigrate(string[] args)
     {
         var connection = GetArg(args, "--connection") ?? GetArg(args, "-c");
+        var providerArg = GetArg(args, "--provider") ?? GetArg(args, "-p") ?? "SqlServer";
         var switchConfig = !HasFlag(args, "--no-switch");
 
         if (string.IsNullOrWhiteSpace(connection))
@@ -114,63 +119,141 @@ internal static class Program
             return 1;
         }
 
+        if (!ServerConfig.TryParseProvider(providerArg, out var target) || target == DatabaseProvider.Sqlite)
+        {
+            Console.Error.WriteLine("Invalid --provider. Use SqlServer, MySql, or PostgreSql.");
+            return 1;
+        }
+
         var config = ServerConfig.LoadOrCreate();
         Db.Configure(config);
         if (Db.Provider == DatabaseProvider.Sqlite)
             SQLitePCL.Batteries_V2.Init();
 
-        Console.WriteLine("Migrating Coalesce data â†’ SQL Server...");
+        Console.WriteLine($"Migrating Coalesce data -> {target}...");
         Console.WriteLine($"Source : {config.Describe()}");
-        Console.WriteLine($"Target : SQL Server");
+        Console.WriteLine($"Target : {target}");
         Console.WriteLine();
 
         try
         {
-            var result = PlatformMigrator.MigrateToSqlServer(connection, switchConfig);
+            var result = PlatformMigrator.MigrateTo(target, connection, switchConfig);
             Console.WriteLine("Migration complete.");
             Console.WriteLine($"Config updated : {result.ConfigUpdated}");
             Console.WriteLine($"Config path    : {result.ConfigPath}");
             foreach (var kv in result.Counts)
                 Console.WriteLine($"  {kv.Key}: {kv.Value}");
             Console.WriteLine();
-            Console.WriteLine("Next: start the server again. It will use SQL Server automatically.");
-            Console.WriteLine("Keep a backup of the original SQLite file until you verify the new database.");
+            Console.WriteLine($"Next: start the server again. It will use {target} automatically.");
+            Console.WriteLine("Keep a backup of the original database until you verify the new one.");
             return 0;
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine("Migration failed:");
             Console.Error.WriteLine(ex.Message);
+            if (ex.InnerException != null)
+                Console.Error.WriteLine(ex.InnerException.Message);
+            return 2;
+        }
+    }
+
+    private static int RunSetDb(string[] args)
+    {
+        var providerArg = GetArg(args, "--provider") ?? GetArg(args, "-p");
+        var connection = GetArg(args, "--connection") ?? GetArg(args, "-c");
+        var ensure = HasFlag(args, "--ensure-created") || HasFlag(args, "--ensure");
+
+        if (string.IsNullOrWhiteSpace(providerArg) ||
+            !ServerConfig.TryParseProvider(providerArg, out var provider))
+        {
+            Console.Error.WriteLine("Missing or invalid --provider (Sqlite, SqlServer, MySql, PostgreSql).");
+            PrintHelp();
+            return 1;
+        }
+
+        if (provider == DatabaseProvider.Sqlite)
+        {
+            if (string.IsNullOrWhiteSpace(connection))
+                connection = $"Data Source={ServerConfig.DefaultSqlitePath}";
+        }
+        else if (string.IsNullOrWhiteSpace(connection))
+        {
+            Console.Error.WriteLine("Missing --connection \"...\" for non-SQLite providers.");
+            PrintHelp();
+            return 1;
+        }
+
+        try
+        {
+            if (provider == DatabaseProvider.Sqlite)
+                SQLitePCL.Batteries_V2.Init();
+
+            if (ensure || Db.IsServerDatabase(provider))
+            {
+                using var test = Db.Create(provider, connection!.Trim());
+                test.Database.EnsureCreated();
+                Console.WriteLine("Connection OK; schema ensured.");
+            }
+
+            var cfg = ServerConfig.LoadOrCreate();
+            cfg.Provider = provider;
+            cfg.ConnectionString = connection!.Trim();
+            cfg.Save();
+            Db.Configure(cfg);
+
+            Console.WriteLine("server.json updated.");
+            Console.WriteLine($"Provider : {cfg.Provider}");
+            Console.WriteLine($"Database : {cfg.Describe()}");
+            Console.WriteLine($"Config   : {ServerConfig.ConfigPath}");
+            Console.WriteLine();
+            Console.WriteLine("Restart Coalesce.Server.exe to use this database.");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("set-db failed:");
+            Console.Error.WriteLine(ex.Message);
+            if (ex.InnerException != null)
+                Console.Error.WriteLine(ex.InnerException.Message);
             return 2;
         }
     }
 
     private static void PrintHelp()
     {
-        Console.WriteLine(@"Coalesce.Server`n
+        Console.WriteLine(@"
+Coalesce.Server
+
 Usage:
   Coalesce.Server.exe
       Start the API using %LOCALAPPDATA%\Coalesce\Server\server.json
       Fresh databases get clean system defaults only (no demo catalog).
 
   Coalesce.Server.exe --demo
-      Same as above, but seed sample customers, suppliers, products, and POs
-      when the product catalog is empty (for demos / training).
+      Seed sample customers, suppliers, products, and POs when the catalog is empty.
 
-  Coalesce.Server.exe migrate --connection ""<sql-server-connection-string>""
-      Copy current database to an empty SQL Server database and switch config.
+  Coalesce.Server.exe migrate --provider <SqlServer|MySql|PostgreSql> --connection ""...""
+      Copy the current database into an empty target database and switch server.json.
 
   Coalesce.Server.exe migrate --connection ""..."" --no-switch
       Copy data but leave server.json on the current provider.
+      (--provider defaults to SqlServer when omitted.)
+
+  Coalesce.Server.exe set-db --provider <Sqlite|SqlServer|MySql|PostgreSql> --connection ""...""
+      Point server.json at a database (optionally create schema). Does not copy data.
 
 Examples:
-  Coalesce.Server.exe migrate --connection ""Server=localhost;Database=Coalesce;Trusted_Connection=True;TrustServerCertificate=True;""
-  Coalesce.Server.exe migrate --connection ""Server=db01;Database=Coalesce;User Id=coalesce;Password=***;""
+  Coalesce.Server.exe migrate --provider SqlServer --connection ""Server=localhost;Database=Coalesce;Trusted_Connection=True;TrustServerCertificate=True;""
+  Coalesce.Server.exe migrate --provider MySql --connection ""Server=localhost;Port=3306;Database=coalesce;User=coalesce;Password=***;""
+  Coalesce.Server.exe migrate --provider PostgreSql --connection ""Host=localhost;Port=5432;Database=coalesce;Username=coalesce;Password=***;""
+  Coalesce.Server.exe set-db --provider MySql --connection ""Server=localhost;Database=coalesce;User=coalesce;Password=***;""
 
 Notes:
-  - Create an empty SQL Server database first (or allow the login to create it).
-  - Target must not already contain Coalesce data.
-  - App code does not change â€” only the database provider in server.json.
+  - Create an empty target database first (or allow the login to create it).
+  - Migrate target must not already contain Coalesce business data.
+  - You can also edit Provider and ConnectionString in server.json directly.
+  - Client and API stay the same — only the database backend changes.
 ");
     }
 
@@ -190,5 +273,3 @@ Notes:
         return null;
     }
 }
-
-

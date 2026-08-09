@@ -6,34 +6,41 @@ using Microsoft.EntityFrameworkCore;
 namespace Ledgerly.Server.Data;
 
 /// <summary>
-/// Copies a live Ledgerly database onto SQL Server while preserving IDs
+/// Copies a live Coalesce database onto another provider while preserving IDs
 /// so relationships stay intact. Switches server.json when requested.
 /// </summary>
 public static class PlatformMigrator
 {
-    public static MigrationResult MigrateToSqlServer(string sqlServerConnectionString, bool switchConfig = true)
+    public static MigrationResult MigrateToSqlServer(string sqlServerConnectionString, bool switchConfig = true) =>
+        MigrateTo(DatabaseProvider.SqlServer, sqlServerConnectionString, switchConfig);
+
+    public static MigrationResult MigrateTo(
+        DatabaseProvider targetProvider,
+        string connectionString,
+        bool switchConfig = true)
     {
-        if (string.IsNullOrWhiteSpace(sqlServerConnectionString))
-            throw new ArgumentException("SQL Server connection string is required.", nameof(sqlServerConnectionString));
+        if (targetProvider == DatabaseProvider.Sqlite)
+            throw new ArgumentException("Migrate targets a server database (SqlServer, MySql, or PostgreSql).", nameof(targetProvider));
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new ArgumentException("Connection string is required.", nameof(connectionString));
 
         var sourceProvider = Db.Provider;
         var sourceCs = Db.ConnectionString;
+        var targetCs = connectionString.Trim();
 
         using var source = Db.Create(sourceProvider, sourceCs);
-        // Source schema only — do not run provider-global SchemaMigrator side effects against SQL yet
         if (sourceProvider == DatabaseProvider.Sqlite)
             SchemaMigrator.Apply(source);
         else
             source.Database.EnsureCreated();
 
-        using var dest = Db.Create(DatabaseProvider.SqlServer, sqlServerConnectionString);
+        using var dest = Db.Create(targetProvider, targetCs);
         dest.Database.EnsureCreated();
 
         if (dest.Products.Any() || dest.Suppliers.Any() || dest.Customers.Any())
             throw new InvalidOperationException(
-                "Target SQL Server database already has Ledgerly data. Create/use an empty database, then retry.");
+                $"Target {targetProvider} database already has Coalesce data. Create/use an empty database, then retry.");
 
-        // Clear default settings row created by EnsureCreated path if present empty-ish
         var existingSettings = dest.Settings.ToList();
         if (existingSettings.Count > 0 && !dest.Products.Any())
         {
@@ -41,13 +48,13 @@ public static class PlatformMigrator
             dest.SaveChanges();
         }
 
-        CopyAll(source, dest);
+        CopyAll(source, dest, targetProvider);
 
         if (switchConfig)
         {
             var cfg = ServerConfig.LoadOrCreate();
-            cfg.Provider = DatabaseProvider.SqlServer;
-            cfg.ConnectionString = sqlServerConnectionString.Trim();
+            cfg.Provider = targetProvider;
+            cfg.ConnectionString = targetCs;
             cfg.Save();
             Db.Configure(cfg);
         }
@@ -55,64 +62,71 @@ public static class PlatformMigrator
         return new MigrationResult
         {
             SourceProvider = sourceProvider.ToString(),
-            TargetProvider = nameof(DatabaseProvider.SqlServer),
+            TargetProvider = targetProvider.ToString(),
             ConfigUpdated = switchConfig,
             ConfigPath = ServerConfig.ConfigPath,
             Counts = CountSummary(dest)
         };
     }
 
-    public static void CopyAll(ErpDbContext source, ErpDbContext dest)
+    public static void CopyAll(ErpDbContext source, ErpDbContext dest, DatabaseProvider destProvider)
     {
-        CopyTable(dest, "CompanySettings",
+        CopyTable(dest, destProvider, "CompanySettings",
             source.Settings.AsNoTracking().ToList(),
             rows => dest.Settings.AddRange(CloneSettings(rows)));
 
-        CopyTable(dest, "Suppliers",
+        CopyTable(dest, destProvider, "Suppliers",
             source.Suppliers.AsNoTracking().ToList(),
             rows => dest.Suppliers.AddRange(rows.Select(CloneSupplier)));
 
-        CopyTable(dest, "Customers",
+        CopyTable(dest, destProvider, "Customers",
             source.Customers.AsNoTracking().ToList(),
             rows => dest.Customers.AddRange(rows.Select(CloneCustomer)));
 
-        CopyTable(dest, "Products",
+        CopyTable(dest, destProvider, "Products",
             source.Products.AsNoTracking().ToList(),
             rows => dest.Products.AddRange(rows.Select(CloneProduct)));
 
-        CopyTable(dest, "PurchaseOrders",
+        CopyTable(dest, destProvider, "PurchaseOrders",
             source.PurchaseOrders.AsNoTracking().ToList(),
             rows => dest.PurchaseOrders.AddRange(rows.Select(ClonePo)));
 
-        CopyTable(dest, "PurchaseOrderLines",
+        CopyTable(dest, destProvider, "PurchaseOrderLines",
             source.PurchaseOrderLines.AsNoTracking().ToList(),
             rows => dest.PurchaseOrderLines.AddRange(rows.Select(ClonePoLine)));
 
-        CopyTable(dest, "SalesOrders",
+        CopyTable(dest, destProvider, "SalesOrders",
             source.SalesOrders.AsNoTracking().ToList(),
             rows => dest.SalesOrders.AddRange(rows.Select(CloneSo)));
 
-        CopyTable(dest, "SalesOrderLines",
+        CopyTable(dest, destProvider, "SalesOrderLines",
             source.SalesOrderLines.AsNoTracking().ToList(),
             rows => dest.SalesOrderLines.AddRange(rows.Select(CloneSoLine)));
 
-        CopyTable(dest, "Reminders",
+        CopyTable(dest, destProvider, "Reminders",
             source.Reminders.AsNoTracking().ToList(),
             rows => dest.Reminders.AddRange(rows.Select(CloneReminder)));
 
-        CopyTable(dest, "StockMovements",
+        CopyTable(dest, destProvider, "StockMovements",
             source.StockMovements.AsNoTracking().ToList(),
             rows => dest.StockMovements.AddRange(rows.Select(CloneMovement)));
+
+        if (destProvider == DatabaseProvider.PostgreSql)
+            ResetPostgresSequences(dest);
     }
 
     private static void CopyTable<T>(
         ErpDbContext dest,
+        DatabaseProvider destProvider,
         string table,
         List<T> rows,
         Action<List<T>> add) where T : class
     {
         if (rows.Count == 0) return;
-        dest.Database.ExecuteSqlRaw($"SET IDENTITY_INSERT [{table}] ON");
+
+        var identityInsert = destProvider == DatabaseProvider.SqlServer;
+        if (identityInsert)
+            dest.Database.ExecuteSqlRaw($"SET IDENTITY_INSERT [{table}] ON");
         try
         {
             add(rows);
@@ -122,7 +136,29 @@ public static class PlatformMigrator
         }
         finally
         {
-            dest.Database.ExecuteSqlRaw($"SET IDENTITY_INSERT [{table}] OFF");
+            if (identityInsert)
+                dest.Database.ExecuteSqlRaw($"SET IDENTITY_INSERT [{table}] OFF");
+        }
+    }
+
+    private static void ResetPostgresSequences(ErpDbContext dest)
+    {
+        foreach (var table in new[]
+                 {
+                     "CompanySettings", "Suppliers", "Customers", "Products",
+                     "PurchaseOrders", "PurchaseOrderLines", "SalesOrders", "SalesOrderLines",
+                     "Reminders", "StockMovements"
+                 })
+        {
+            try
+            {
+                dest.Database.ExecuteSqlRaw(
+                    $@"SELECT setval(pg_get_serial_sequence('""{table}""', 'Id'), COALESCE((SELECT MAX(""Id"") FROM ""{table}""), 1));");
+            }
+            catch
+            {
+                // Sequence name may differ; next insert will still work for empty tables.
+            }
         }
     }
 

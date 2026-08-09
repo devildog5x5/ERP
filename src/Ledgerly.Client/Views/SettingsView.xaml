@@ -27,7 +27,7 @@
             <TextBlock Text="Database platform" FontWeight="SemiBold" FontSize="16" Margin="0,8,0,10"/>
             <TextBlock x:Name="DbPlatformText" TextWrapping="Wrap" Foreground="#2A3A48" Margin="0,0,0,8"/>
             <TextBlock TextWrapping="Wrap" Foreground="#667888" Margin="0,0,0,16"
-                       Text="When the company outgrows local SQLite, stop the server and run one command to move onto SQL Server. The client and API stay the same — only the database changes. See README → “Scale-up / migrate to SQL Server”."/>
+                       Text="Default is local SQLite. For multi-user or hosted backends, stop the server and migrate or point config at SQL Server, MySQL/MariaDB, or PostgreSQL (Coalesce.Server.exe migrate / set-db, or edit server.json). The client and API stay the same — only the database changes. See README → Database providers."/>
 
             <StackPanel Orientation="Horizontal">
                 <Button Content="Save settings" Style="{StaticResource PrimaryButton}" Click="Save_Click" Margin="0,0,8,0" svc:Access.Permission="settings"/>

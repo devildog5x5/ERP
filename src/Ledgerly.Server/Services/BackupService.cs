@@ -23,21 +23,32 @@ public static class BackupService
             return new Shared.BackupResultDto { Path = dest, CreatedAt = DateTime.Now, Provider = "Sqlite" };
         }
 
-        // SQL Server: write a restore instruction file (never persist the raw connection string)
-        var note = Path.Combine(BackupDirectory, $"sqlserver-backup-{stamp}.txt");
-        var safe = new ServerConfig { Provider = DatabaseProvider.SqlServer, ConnectionString = Db.ConnectionString }.Describe();
+        var note = Path.Combine(BackupDirectory, $"{Db.Provider.ToString().ToLowerInvariant()}-backup-{stamp}.txt");
+        var safe = new ServerConfig { Provider = Db.Provider, ConnectionString = Db.ConnectionString }.Describe();
+        var toolHint = Db.Provider switch
+        {
+            DatabaseProvider.MySql =>
+                "Use mysqldump or your host's backup tool, e.g.\r\n" +
+                $"mysqldump -u USER -p DATABASE > coalesce-{stamp}.sql",
+            DatabaseProvider.PostgreSql =>
+                "Use pg_dump or your host's backup tool, e.g.\r\n" +
+                $"pg_dump -U USER DATABASE > coalesce-{stamp}.sql",
+            _ =>
+                "Use SQL Server Management Studio or:\r\n" +
+                $"BACKUP DATABASE [YourDb] TO DISK = 'C:\\Backup\\Coalesce-{stamp}.bak'"
+        };
         File.WriteAllText(note,
-            "SQL Server provider is active.\r\n" +
-            "Use SQL Server Management Studio or:\r\n" +
-            $"BACKUP DATABASE [YourDb] TO DISK = 'C:\\Backup\\Ledgerly-{stamp}.bak'\r\n" +
+            $"{Db.Provider} provider is active.\r\n" +
+            $"{toolHint}\r\n" +
             $"Target : {safe}\r\n");
-        return new Shared.BackupResultDto { Path = note, CreatedAt = DateTime.Now, Provider = "SqlServer" };
+        return new Shared.BackupResultDto { Path = note, CreatedAt = DateTime.Now, Provider = Db.Provider.ToString() };
     }
 
     public static void RestoreSqlite(string backupPath)
     {
         if (Db.Provider != DatabaseProvider.Sqlite)
-            throw new InvalidOperationException("File restore is only supported for SQLite. Use SQL Server restore tools for SQL Server.");
+            throw new InvalidOperationException(
+                "File restore is only supported for SQLite. Use your database vendor's restore tools for SQL Server, MySQL, or PostgreSQL.");
 
         var resolved = ResolveBackupPath(backupPath);
         if (!File.Exists(resolved))

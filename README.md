@@ -12,11 +12,11 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.2/CoalesceSetup.exe) |
-| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.2/CoalesceClientSetup.exe) |
-| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.2/CoalesceServerSetup.exe) |
+| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.3/CoalesceSetup.exe) |
+| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.3/CoalesceClientSetup.exe) |
+| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.3/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.2](https://github.com/devildog5x5/ERP/releases/tag/v1.6.2)
+- Latest release: [v1.6.3](https://github.com/devildog5x5/ERP/releases/tag/v1.6.3)
 - Every installer asks up front — loudly — whether to install **Client**, **Server**, or **Both**.
 - Default login after install: `admin` / `admin`
 - Server listens at `http://127.0.0.1:8000` by default
@@ -41,6 +41,35 @@ src/Ledgerly.Shared   Shared DTOs
 ```
 
 App data lives under `%LOCALAPPDATA%\Coalesce\` (Server / Client / Backups). Prior Ledgerly AppData is migrated automatically on first run.
+
+## Database providers
+
+Configured in `%LOCALAPPDATA%\Coalesce\Server\server.json` (`Provider` + `ConnectionString`). Default is **Sqlite**.
+
+| Provider | Typical use | Example `Provider` value |
+|----------|-------------|--------------------------|
+| **Sqlite** | Single PC / small shop (default) | `Sqlite` |
+| **SqlServer** | Windows Server / Azure SQL | `SqlServer` |
+| **MySql** | MySQL or MariaDB | `MySql` |
+| **PostgreSql** | PostgreSQL | `PostgreSql` |
+
+**Point at an empty database** (creates schema, does not copy data):
+
+```powershell
+Coalesce.Server.exe set-db --provider MySql --connection "Server=localhost;Port=3306;Database=coalesce;User=coalesce;Password=***;"
+Coalesce.Server.exe set-db --provider PostgreSql --connection "Host=localhost;Port=5432;Database=coalesce;Username=coalesce;Password=***;"
+Coalesce.Server.exe set-db --provider SqlServer --connection "Server=localhost;Database=Coalesce;Trusted_Connection=True;TrustServerCertificate=True;"
+```
+
+**Copy current data** into an empty target and switch config:
+
+```powershell
+Coalesce.Server.exe migrate --provider SqlServer --connection "Server=localhost;Database=Coalesce;Trusted_Connection=True;TrustServerCertificate=True;"
+Coalesce.Server.exe migrate --provider MySql --connection "Server=localhost;Database=coalesce;User=coalesce;Password=***;"
+Coalesce.Server.exe migrate --provider PostgreSql --connection "Host=localhost;Database=coalesce;Username=coalesce;Password=***;"
+```
+
+Use `--no-switch` on `migrate` to copy without changing `server.json`. Restart the server after `set-db` or a config-switching migrate. File backup/restore in the app applies to SQLite only; use vendor tools for SQL Server / MySQL / PostgreSQL.
 
 ## CRM (complements ERP)
 

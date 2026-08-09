@@ -60,8 +60,8 @@ public partial class SettingsView : UserControl
             }
 
             var scale = health.CanScaleOut
-                ? "Ready for multi-user / larger workloads (SQL Server)."
-                : "Local SQLite (great for single shop). Migrate to SQL Server when you need more concurrency.";
+                ? "Using a server database (SQL Server, MySQL, or PostgreSQL) — suitable for multi-user workloads."
+                : "Local SQLite (great for single shop). Migrate to SQL Server, MySQL, or PostgreSQL when you need more concurrency.";
             DbPlatformText.Text =
                 $"Provider: {health.DatabaseProvider}\n{health.Database}\n{scale}";
         }

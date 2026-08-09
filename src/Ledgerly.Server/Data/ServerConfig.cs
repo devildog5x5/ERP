@@ -107,17 +107,63 @@ public sealed class ServerConfig
     {
         if (Provider == DatabaseProvider.Sqlite)
             return $"SQLite · {ConnectionString.Replace("Data Source=", "").Trim()}";
-        var safe = ConnectionString;
+        var safe = MaskSecrets(ConnectionString);
+        return Provider switch
+        {
+            DatabaseProvider.MySql => $"MySQL · {safe}",
+            DatabaseProvider.PostgreSql => $"PostgreSQL · {safe}",
+            _ => $"SQL Server · {safe}"
+        };
+    }
+
+    public static string MaskSecrets(string connectionString)
+    {
+        var safe = connectionString ?? "";
         foreach (var key in new[] { "Password=", "Pwd=" })
         {
             var idx = safe.IndexOf(key, StringComparison.OrdinalIgnoreCase);
-            if (idx >= 0)
-            {
-                var end = safe.IndexOf(';', idx);
-                if (end < 0) end = safe.Length;
-                safe = safe.Substring(0, idx + key.Length) + "***" + (end < safe.Length ? safe.Substring(end) : "");
-            }
+            if (idx < 0) continue;
+            var end = safe.IndexOf(';', idx);
+            if (end < 0) end = safe.Length;
+            safe = safe.Substring(0, idx + key.Length) + "***" + (end < safe.Length ? safe.Substring(end) : "");
         }
-        return $"SQL Server · {safe}";
+        return safe;
+    }
+
+    public static bool TryParseProvider(string? value, out DatabaseProvider provider)
+    {
+        provider = DatabaseProvider.Sqlite;
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        var v = value.Trim();
+        if (v.Equals("Sqlite", StringComparison.OrdinalIgnoreCase) ||
+            v.Equals("SQLite", StringComparison.OrdinalIgnoreCase))
+        {
+            provider = DatabaseProvider.Sqlite;
+            return true;
+        }
+        if (v.Equals("SqlServer", StringComparison.OrdinalIgnoreCase) ||
+            v.Equals("SQLServer", StringComparison.OrdinalIgnoreCase) ||
+            v.Equals("MSSQL", StringComparison.OrdinalIgnoreCase) ||
+            v.Equals("SQL Server", StringComparison.OrdinalIgnoreCase))
+        {
+            provider = DatabaseProvider.SqlServer;
+            return true;
+        }
+        if (v.Equals("MySql", StringComparison.OrdinalIgnoreCase) ||
+            v.Equals("MySQL", StringComparison.OrdinalIgnoreCase) ||
+            v.Equals("MariaDB", StringComparison.OrdinalIgnoreCase))
+        {
+            provider = DatabaseProvider.MySql;
+            return true;
+        }
+        if (v.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase) ||
+            v.Equals("Postgres", StringComparison.OrdinalIgnoreCase) ||
+            v.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase) ||
+            v.Equals("Npgsql", StringComparison.OrdinalIgnoreCase))
+        {
+            provider = DatabaseProvider.PostgreSql;
+            return true;
+        }
+        return Enum.TryParse(v, ignoreCase: true, out provider);
     }
 }
