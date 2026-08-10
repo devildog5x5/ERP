@@ -4,7 +4,7 @@
   #define Package "combined"
 #endif
 
-#define MyAppVersion "1.6.10"
+#define MyAppVersion "1.6.11"
 #define MyAppPublisher "Coalesce"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
 #define MyAppName "Coalesce"
