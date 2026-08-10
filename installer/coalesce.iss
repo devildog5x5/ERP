@@ -4,7 +4,7 @@
   #define Package "combined"
 #endif
 
-#define MyAppVersion "1.6.14"
+#define MyAppVersion "1.6.15"
 #define MyAppPublisher "Coalesce"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
 #define MyAppName "Coalesce"
@@ -63,9 +63,14 @@ UsePreviousGroup=yes
 CloseApplications=yes
 RestartApplications=no
 ShowComponentSizes=no
+; One Coalesce installer at a time (Combined / Client / Server share this mutex)
+SetupMutex=Coalesce_ERP_Setup_Mutex
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Messages]
+SetupAppRunningError=Coalesce Setup is already running.%n%nClose the other installer window, then try again.
 
 [Types]
 Name: "full"; Description: "Both (Client and Server)"
