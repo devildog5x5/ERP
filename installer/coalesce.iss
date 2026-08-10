@@ -4,7 +4,7 @@
   #define Package "combined"
 #endif
 
-#define MyAppVersion "1.6.11"
+#define MyAppVersion "1.6.12"
 #define MyAppPublisher "Coalesce"
 #define MyAppURL "https://github.com/devildog5x5/ERP"
 #define MyAppName "Coalesce"
@@ -110,6 +110,16 @@ var
   RoleHintBoth: TNewStaticText;
   RoleHintClient: TNewStaticText;
   RoleHintServer: TNewStaticText;
+  DbSizePage: TWizardPage;
+  DbSizeHeadline: TNewStaticText;
+  DbSizeSubhead: TNewStaticText;
+  DbSizeSmall: TRadioButton;
+  DbSizeMedium: TRadioButton;
+  DbSizeLarge: TRadioButton;
+  DbSizeCustom: TRadioButton;
+  DbSizeCustomLabel: TNewStaticText;
+  DbSizeCustomEdit: TNewEdit;
+  DbSizeHint: TNewStaticText;
 
 function IsDotNet48OrLater(): Boolean;
 var
@@ -346,14 +356,190 @@ begin
     RoleBoth.Checked := True;
 
   ApplyRoleSelection();
+
+  { Database size page — shown when Server is included }
+  DbSizePage := CreateCustomPage(RolePage.ID,
+    'DATABASE SIZE',
+    'Choose how large you expect this Coalesce database to grow.');
+
+  DbSizeHeadline := TNewStaticText.Create(DbSizePage);
+  DbSizeHeadline.Parent := DbSizePage.Surface;
+  DbSizeHeadline.Caption := 'PLANNED DATABASE SIZE';
+  DbSizeHeadline.Font.Name := 'Segoe UI';
+  DbSizeHeadline.Font.Size := 16;
+  DbSizeHeadline.Font.Style := [fsBold];
+  DbSizeHeadline.Font.Color := clMaroon;
+  DbSizeHeadline.AutoSize := True;
+  DbSizeHeadline.Left := 0;
+  DbSizeHeadline.Top := 0;
+
+  DbSizeSubhead := TNewStaticText.Create(DbSizePage);
+  DbSizeSubhead.Parent := DbSizePage.Surface;
+  DbSizeSubhead.Caption :=
+    'Coalesce starts on a local SQLite file. This sets your planned capacity for status warnings (not a hard engine limit).';
+  DbSizeSubhead.Font.Name := 'Segoe UI';
+  DbSizeSubhead.Font.Size := 9;
+  DbSizeSubhead.AutoSize := False;
+  DbSizeSubhead.WordWrap := True;
+  DbSizeSubhead.Left := 0;
+  DbSizeSubhead.Top := DbSizeHeadline.Top + DbSizeHeadline.Height + ScaleY(8);
+  DbSizeSubhead.Width := DbSizePage.SurfaceWidth;
+  DbSizeSubhead.Height := ScaleY(36);
+
+  TopY := DbSizeSubhead.Top + DbSizeSubhead.Height + ScaleY(12);
+
+  DbSizeSmall := TRadioButton.Create(DbSizePage);
+  DbSizeSmall.Parent := DbSizePage.Surface;
+  DbSizeSmall.Caption := 'Small  —  up to about 500 MB (light single-PC use)';
+  DbSizeSmall.Font.Name := 'Segoe UI';
+  DbSizeSmall.Font.Size := 11;
+  DbSizeSmall.Left := ScaleX(4);
+  DbSizeSmall.Top := TopY;
+  DbSizeSmall.Width := DbSizePage.SurfaceWidth - ScaleX(8);
+  DbSizeSmall.Height := ScaleY(22);
+
+  TopY := DbSizeSmall.Top + DbSizeSmall.Height + ScaleY(10);
+
+  DbSizeMedium := TRadioButton.Create(DbSizePage);
+  DbSizeMedium.Parent := DbSizePage.Surface;
+  DbSizeMedium.Caption := 'Medium  —  up to about 2 GB (recommended default)';
+  DbSizeMedium.Font.Name := 'Segoe UI';
+  DbSizeMedium.Font.Size := 11;
+  DbSizeMedium.Font.Style := [fsBold];
+  DbSizeMedium.Left := ScaleX(4);
+  DbSizeMedium.Top := TopY;
+  DbSizeMedium.Width := DbSizePage.SurfaceWidth - ScaleX(8);
+  DbSizeMedium.Height := ScaleY(22);
+  DbSizeMedium.Checked := True;
+
+  TopY := DbSizeMedium.Top + DbSizeMedium.Height + ScaleY(10);
+
+  DbSizeLarge := TRadioButton.Create(DbSizePage);
+  DbSizeLarge.Parent := DbSizePage.Surface;
+  DbSizeLarge.Caption := 'Large  —  up to about 10 GB (busy warehouse / many years of history)';
+  DbSizeLarge.Font.Name := 'Segoe UI';
+  DbSizeLarge.Font.Size := 11;
+  DbSizeLarge.Left := ScaleX(4);
+  DbSizeLarge.Top := TopY;
+  DbSizeLarge.Width := DbSizePage.SurfaceWidth - ScaleX(8);
+  DbSizeLarge.Height := ScaleY(22);
+
+  TopY := DbSizeLarge.Top + DbSizeLarge.Height + ScaleY(10);
+
+  DbSizeCustom := TRadioButton.Create(DbSizePage);
+  DbSizeCustom.Parent := DbSizePage.Surface;
+  DbSizeCustom.Caption := 'Custom size (megabytes)';
+  DbSizeCustom.Font.Name := 'Segoe UI';
+  DbSizeCustom.Font.Size := 11;
+  DbSizeCustom.Left := ScaleX(4);
+  DbSizeCustom.Top := TopY;
+  DbSizeCustom.Width := DbSizePage.SurfaceWidth - ScaleX(8);
+  DbSizeCustom.Height := ScaleY(22);
+
+  DbSizeCustomLabel := TNewStaticText.Create(DbSizePage);
+  DbSizeCustomLabel.Parent := DbSizePage.Surface;
+  DbSizeCustomLabel.Caption := 'MB:';
+  DbSizeCustomLabel.Font.Name := 'Segoe UI';
+  DbSizeCustomLabel.Font.Size := 10;
+  DbSizeCustomLabel.Left := ScaleX(28);
+  DbSizeCustomLabel.Top := DbSizeCustom.Top + DbSizeCustom.Height + ScaleY(6);
+  DbSizeCustomLabel.AutoSize := True;
+
+  DbSizeCustomEdit := TNewEdit.Create(DbSizePage);
+  DbSizeCustomEdit.Parent := DbSizePage.Surface;
+  DbSizeCustomEdit.Left := DbSizeCustomLabel.Left + DbSizeCustomLabel.Width + ScaleX(8);
+  DbSizeCustomEdit.Top := DbSizeCustomLabel.Top - ScaleY(2);
+  DbSizeCustomEdit.Width := ScaleX(100);
+  DbSizeCustomEdit.Text := '4096';
+
+  DbSizeHint := TNewStaticText.Create(DbSizePage);
+  DbSizeHint.Parent := DbSizePage.Surface;
+  DbSizeHint.Caption :=
+    'Tip: for multi-user or hosted SQL Server / MySQL / PostgreSQL, install with Medium, then use Settings → Grow database… after setup.';
+  DbSizeHint.Font.Name := 'Segoe UI';
+  DbSizeHint.Font.Size := 9;
+  DbSizeHint.Font.Color := clGray;
+  DbSizeHint.AutoSize := False;
+  DbSizeHint.WordWrap := True;
+  DbSizeHint.Left := 0;
+  DbSizeHint.Top := DbSizeCustomEdit.Top + DbSizeCustomEdit.Height + ScaleY(16);
+  DbSizeHint.Width := DbSizePage.SurfaceWidth;
+  DbSizeHint.Height := ScaleY(40);
+end;
+
+function ServerComponentSelected(): Boolean;
+begin
+  Result := WizardIsComponentSelected('server');
+end;
+
+function SelectedDatabaseSizeMb(): Integer;
+var
+  CustomMb: Integer;
+begin
+  if DbSizeSmall.Checked then
+    Result := 500
+  else if DbSizeLarge.Checked then
+    Result := 10240
+  else if DbSizeCustom.Checked then
+  begin
+    CustomMb := StrToIntDef(Trim(DbSizeCustomEdit.Text), 0);
+    Result := CustomMb;
+  end
+  else
+    Result := 2048; { Medium }
+end;
+
+function SelectedCapacityProfile(): String;
+begin
+  if DbSizeSmall.Checked then
+    Result := 'Small'
+  else if DbSizeLarge.Checked then
+    Result := 'Large'
+  else if DbSizeCustom.Checked then
+    Result := 'Custom'
+  else
+    Result := 'Medium';
+end;
+
+procedure WriteCapacityConfig();
+var
+  Dir, CapPath, Json: String;
+  SizeMb: Integer;
+  Profile: String;
+begin
+  if not ServerComponentSelected() then
+    exit;
+
+  Dir := ExpandConstant('{localappdata}\Coalesce\Server');
+  if not DirExists(Dir) then
+    ForceDirectories(Dir);
+
+  SizeMb := SelectedDatabaseSizeMb();
+  Profile := SelectedCapacityProfile();
+  CapPath := Dir + '\capacity.json';
+  Json :=
+    '{' + #13#10 +
+    '  "DatabaseSizeMb": ' + IntToStr(SizeMb) + ',' + #13#10 +
+    '  "CapacityProfile": "' + Profile + '"' + #13#10 +
+    '}' + #13#10;
+
+  if not SaveStringToFile(CapPath, Json, False) then
+    Log('Warning: could not write ' + CapPath);
+  Log('Wrote planned database size ' + IntToStr(SizeMb) + ' MB (' + Profile + ') to ' + CapPath);
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
-  Result := PageID = wpSelectComponents;
+  Result := False;
+  if PageID = wpSelectComponents then
+    Result := True
+  else if (DbSizePage <> nil) and (PageID = DbSizePage.ID) then
+    Result := not ServerComponentSelected();
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  SizeMb: Integer;
 begin
   Result := True;
   if CurPageID = RolePage.ID then
@@ -365,5 +551,27 @@ begin
       exit;
     end;
     ApplyRoleSelection();
+  end
+  else if (DbSizePage <> nil) and (CurPageID = DbSizePage.ID) then
+  begin
+    SizeMb := SelectedDatabaseSizeMb();
+    if SizeMb < 100 then
+    begin
+      MsgBox('Enter a custom database size of at least 100 MB.', mbError, MB_OK);
+      Result := False;
+      exit;
+    end;
+    if SizeMb > 1048576 then
+    begin
+      MsgBox('Custom database size cannot exceed 1,048,576 MB (1 TB).', mbError, MB_OK);
+      Result := False;
+      exit;
+    end;
   end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    WriteCapacityConfig();
 end;

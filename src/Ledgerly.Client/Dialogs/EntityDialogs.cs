@@ -407,13 +407,25 @@ public static class EntityDialogs
             Padding = new Thickness(14),
             Margin = new Thickness(0, 0, 0, 14)
         };
+        var plannedLine = status.PlannedSizeMb.HasValue
+            ? $"Planned size: {status.PlannedSizeMb:N0} MB" +
+              (string.IsNullOrWhiteSpace(status.CapacityProfile) ? "" : $" ({status.CapacityProfile})")
+            : "";
         header.Child = new StackPanel
         {
             Children =
             {
                 new TextBlock { Text = status.ProviderLabel, FontSize = 18, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(0x15, 0x20, 0x2B)) },
                 new TextBlock { Text = status.CapacityLabel, Foreground = levelBrush, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 4, 0, 0), TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = status.Summary, Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)), Margin = new Thickness(0, 6, 0, 0), TextWrapping = TextWrapping.Wrap }
+                new TextBlock { Text = status.Summary, Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)), Margin = new Thickness(0, 6, 0, 0), TextWrapping = TextWrapping.Wrap },
+                new TextBlock
+                {
+                    Text = plannedLine,
+                    Foreground = new SolidColorBrush(Color.FromRgb(0x66, 0x78, 0x88)),
+                    Margin = new Thickness(0, 4, 0, 0),
+                    TextWrapping = TextWrapping.Wrap,
+                    Visibility = string.IsNullOrWhiteSpace(plannedLine) ? Visibility.Collapsed : Visibility.Visible
+                }
             }
         };
         DockPanel.SetDock(header, Dock.Top);
@@ -851,10 +863,11 @@ public static class EntityDialogs
         AddH("1. Database status (how full is it?)");
         AddP("Open Settings → Database status… (or the pie chart summary). You will see:");
         AddBullet("Provider type (SQLite, SQL Server, MySQL, PostgreSQL) and characteristics");
-        AddBullet("Used / free / capacity, with a fullness pie chart");
+        AddBullet("Used / free / capacity against the planned size chosen at install (Small / Medium / Large / Custom)");
         AddBullet("Largest tables by row count (and a share pie when useful)");
         AddBullet("Suggestions such as backup, free disk space, purge old logs, or grow off SQLite");
         AddP("Use Refresh status on Settings anytime to update the summary pie without opening the full dialog.");
+        AddP("The installer Database size page writes a planned capacity (merged into server.json). It is guidance for warnings — not a hard engine limit. Need more room later? Use Grow database…");
 
         AddH("2. Grow database (recommended scale-up)");
         AddP("Use this when SQLite is getting large, disk is tight, or you need multi-user / server hosting. Grow copies your live data onto an empty target database and switches the server automatically.");
@@ -917,7 +930,7 @@ public static class EntityDialogs
         AddP("The Grow database wizard is the supported in-app path for the same outcome.");
 
         AddH("8. Where files live");
-        AddBullet("Config & SQLite: %LOCALAPPDATA%\\Coalesce\\Server\\ (server.json, coalesce.db)");
+        AddBullet("Config & SQLite: %LOCALAPPDATA%\\Coalesce\\Server\\ (server.json, coalesce.db; DatabaseSizeMb from install)");
         AddBullet("Backups: %LOCALAPPDATA%\\Coalesce\\Backups\\");
         AddBullet("Client API URL: Settings → API base URL (default http://127.0.0.1:8000)");
 

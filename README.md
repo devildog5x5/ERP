@@ -14,12 +14,13 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.11/CoalesceSetup.exe) |
-| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.11/CoalesceClientSetup.exe) |
-| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.11/CoalesceServerSetup.exe) |
+| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.12/CoalesceSetup.exe) |
+| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.12/CoalesceClientSetup.exe) |
+| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.12/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.11](https://github.com/devildog5x5/ERP/releases/tag/v1.6.11)
+- Latest release: [v1.6.12](https://github.com/devildog5x5/ERP/releases/tag/v1.6.12)
 - Every installer asks up front — loudly — whether to install **Client**, **Server**, or **Both**.
+- Server installs also ask for a **planned database size** (Small 500 MB / Medium 2 GB / Large 10 GB / Custom). That value is stored in `server.json` (`DatabaseSizeMb`) and drives Database status warnings — it is not a hard engine limit. Need more room later? Use **Settings → Grow database…**.
 - Default login after install: `admin` / `admin`
 - Server listens at `http://127.0.0.1:8000` by default
 - Requires **64-bit Windows** and **[.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48)**
@@ -46,7 +47,7 @@ App data lives under `%LOCALAPPDATA%\Coalesce\` (Server / Client / Backups). Pri
 
 ## Database providers
 
-Configured in `%LOCALAPPDATA%\Coalesce\Server\server.json` (`Provider` + `ConnectionString`). Default is **Sqlite**.
+Configured in `%LOCALAPPDATA%\Coalesce\Server\server.json` (`Provider` + `ConnectionString` + optional `DatabaseSizeMb` / `CapacityProfile`). Default is **Sqlite** with a **Medium (2 GB)** planned size from the installer.
 
 | Provider | Typical use | Example `Provider` value |
 |----------|-------------|--------------------------|

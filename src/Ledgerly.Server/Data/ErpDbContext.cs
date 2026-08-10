@@ -192,6 +192,8 @@ public static class Db
     public static string ConnectionString { get; private set; } = "Data Source=ledgerly.db";
     public static string ListenUrl { get; private set; } = "http://127.0.0.1:8000/";
     public static string ConfigPath { get; private set; } = ServerConfig.ConfigPath;
+    public static long DatabaseSizeMb { get; private set; } = ServerConfig.DefaultDatabaseSizeMb;
+    public static string CapacityProfile { get; private set; } = "Medium";
 
     public static void Configure(ServerConfig config)
     {
@@ -199,6 +201,8 @@ public static class Db
         ConnectionString = config.ConnectionString;
         ListenUrl = string.IsNullOrWhiteSpace(config.ListenUrl) ? "http://127.0.0.1:8000/" : config.ListenUrl;
         ConfigPath = ServerConfig.ConfigPath;
+        DatabaseSizeMb = config.DatabaseSizeMb > 0 ? config.DatabaseSizeMb : ServerConfig.DefaultDatabaseSizeMb;
+        CapacityProfile = string.IsNullOrWhiteSpace(config.CapacityProfile) ? "Medium" : config.CapacityProfile;
     }
 
     public static ErpDbContext Create() => Create(Provider, ConnectionString);

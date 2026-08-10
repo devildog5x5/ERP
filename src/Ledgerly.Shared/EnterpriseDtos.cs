@@ -377,6 +377,10 @@ public class DatabaseStatusDto
     public bool MultiUserReady { get; set; }
     public string CapacityLevel { get; set; } = "ok"; // ok | watch | high | critical
     public string CapacityLabel { get; set; } = "Healthy";
+    /// <summary>Install / config profile: Small, Medium, Large, Custom.</summary>
+    public string? CapacityProfile { get; set; }
+    /// <summary>Planned database size from install/config (MB).</summary>
+    public long? PlannedSizeMb { get; set; }
     public double? PercentFull { get; set; }
     public long? UsedBytes { get; set; }
     public long? FreeBytes { get; set; }

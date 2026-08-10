@@ -10,14 +10,16 @@ namespace Ledgerly.Server.Services;
 
 public static class DatabaseStatusService
 {
-    // Soft guidance for local SQLite file growth (not a hard engine limit).
-    private const long SqliteWatchBytes = 250L * 1024 * 1024;
-    private const long SqliteHighBytes = 1024L * 1024 * 1024;
-    private const long SqliteCriticalBytes = 2L * 1024 * 1024 * 1024;
-
     public static DatabaseStatusDto GetStatus()
     {
-        var cfg = new ServerConfig { Provider = Db.Provider, ConnectionString = Db.ConnectionString };
+        var plannedMb = Db.DatabaseSizeMb > 0 ? Db.DatabaseSizeMb : ServerConfig.DefaultDatabaseSizeMb;
+        var cfg = new ServerConfig
+        {
+            Provider = Db.Provider,
+            ConnectionString = Db.ConnectionString,
+            DatabaseSizeMb = plannedMb,
+            CapacityProfile = Db.CapacityProfile
+        };
         var dto = new DatabaseStatusDto
         {
             Provider = Db.Provider.ToString(),
@@ -25,7 +27,9 @@ public static class DatabaseStatusService
             Summary = cfg.Describe(),
             MultiUserReady = Db.IsServerDatabase(Db.Provider),
             Location = ResolveLocation(),
-            Characteristics = BuildCharacteristics(Db.Provider)
+            Characteristics = BuildCharacteristics(Db.Provider),
+            CapacityProfile = Db.CapacityProfile,
+            PlannedSizeMb = plannedMb
         };
 
         using var db = Db.Create();
@@ -193,19 +197,32 @@ public static class DatabaseStatusService
             if (Db.Provider == DatabaseProvider.Sqlite)
             {
                 var path = Db.ConnectionString.Replace("Data Source=", "").Trim();
-                if (File.Exists(path))
+                long used = File.Exists(path) ? new FileInfo(path).Length : 0;
+                dto.UsedBytes = used;
+
+                // Planned size from install/config drives the capacity pie (not the whole disk).
+                var planned = (dto.PlannedSizeMb ?? ServerConfig.DefaultDatabaseSizeMb) * 1024L * 1024L;
+                if (planned < 100L * 1024L * 1024L) planned = ServerConfig.DefaultDatabaseSizeMb * 1024L * 1024L;
+                dto.CapacityBytes = planned;
+                dto.FreeBytes = Math.Max(0, planned - used);
+                dto.PercentFull = planned > 0 ? Math.Round(100.0 * used / planned, 1) : null;
+
+                // Still surface critically low disk free via ApplyCapacityLevel (separate from planned %).
+                if (!string.IsNullOrWhiteSpace(path))
                 {
-                    var used = new FileInfo(path).Length;
-                    dto.UsedBytes = used;
-                    var root = Path.GetPathRoot(Path.GetFullPath(path));
-                    if (!string.IsNullOrWhiteSpace(root))
+                    try
                     {
-                        var drive = new DriveInfo(root);
-                        dto.FreeBytes = drive.AvailableFreeSpace;
-                        dto.CapacityBytes = drive.TotalSize;
-                        if (drive.TotalSize > 0)
-                            dto.PercentFull = Math.Round(100.0 * (drive.TotalSize - drive.AvailableFreeSpace) / drive.TotalSize, 1);
+                        var root = Path.GetPathRoot(Path.GetFullPath(path));
+                        if (!string.IsNullOrWhiteSpace(root))
+                        {
+                            var drive = new DriveInfo(root);
+                            // Stash drive free in a way ApplyCapacityLevel can use — prefer planned pie,
+                            // but escalate level when the drive itself is nearly full.
+                            if (drive.AvailableFreeSpace < 2L * 1024 * 1024 * 1024)
+                                dto.Characteristics.Add($"Disk free on data drive: {FormatBytes(drive.AvailableFreeSpace)}");
+                        }
                     }
+                    catch { /* ignore */ }
                 }
             }
             else if (Db.Provider == DatabaseProvider.SqlServer)
@@ -249,30 +266,80 @@ public static class DatabaseStatusService
     {
         var level = "ok";
         var label = "Healthy";
-
-        if (Db.Provider == DatabaseProvider.Sqlite && dto.UsedBytes.HasValue)
-        {
-            if (dto.UsedBytes >= SqliteCriticalBytes) { level = "critical"; label = "Critical — SQLite file is very large"; }
-            else if (dto.UsedBytes >= SqliteHighBytes) { level = "high"; label = "High — consider migrating soon"; }
-            else if (dto.UsedBytes >= SqliteWatchBytes) { level = "watch"; label = "Watch — growing local database"; }
-        }
+        var profile = string.IsNullOrWhiteSpace(dto.CapacityProfile) ? "Medium" : dto.CapacityProfile;
 
         if (dto.PercentFull.HasValue)
         {
-            if (dto.PercentFull >= 95) { level = "critical"; label = "Critical — storage nearly full"; }
-            else if (dto.PercentFull >= 85 && Rank(level) < Rank("high")) { level = "high"; label = "High — free up space soon"; }
-            else if (dto.PercentFull >= 70 && Rank(level) < Rank("watch")) { level = "watch"; label = "Watch — disk usage climbing"; }
+            if (Db.Provider == DatabaseProvider.Sqlite)
+            {
+                // Thresholds relative to the planned size chosen at install.
+                if (dto.PercentFull >= 90)
+                {
+                    level = "critical";
+                    label = $"Critical — past 90% of planned {profile} size ({dto.PlannedSizeMb} MB)";
+                }
+                else if (dto.PercentFull >= 75)
+                {
+                    level = "high";
+                    label = $"High — over 75% of planned {profile} size ({dto.PlannedSizeMb} MB)";
+                }
+                else if (dto.PercentFull >= 50)
+                {
+                    level = "watch";
+                    label = $"Watch — over 50% of planned {profile} size ({dto.PlannedSizeMb} MB)";
+                }
+                else
+                {
+                    label = $"Healthy — within planned {profile} size ({dto.PlannedSizeMb} MB)";
+                }
+            }
+            else
+            {
+                if (dto.PercentFull >= 95) { level = "critical"; label = "Critical — storage nearly full"; }
+                else if (dto.PercentFull >= 85) { level = "high"; label = "High — free up space soon"; }
+                else if (dto.PercentFull >= 70) { level = "watch"; label = "Watch — disk usage climbing"; }
+            }
         }
 
-        if (dto.FreeBytes.HasValue && dto.FreeBytes < 2L * 1024 * 1024 * 1024 && Rank(level) < Rank("high"))
+        // Disk free on the SQLite data drive (from characteristics note / re-check).
+        if (Db.Provider == DatabaseProvider.Sqlite)
         {
-            level = "high";
-            label = "High — less than 2 GB free";
+            try
+            {
+                var path = Db.ConnectionString.Replace("Data Source=", "").Trim();
+                if (!string.IsNullOrWhiteSpace(path))
+                {
+                    var root = Path.GetPathRoot(Path.GetFullPath(path));
+                    if (!string.IsNullOrWhiteSpace(root))
+                    {
+                        var free = new DriveInfo(root).AvailableFreeSpace;
+                        if (free < 500L * 1024 * 1024)
+                        {
+                            level = "critical";
+                            label = "Critical — less than 500 MB free on the data drive";
+                        }
+                        else if (free < 2L * 1024 * 1024 * 1024 && Rank(level) < Rank("high"))
+                        {
+                            level = "high";
+                            label = "High — less than 2 GB free on the data drive";
+                        }
+                    }
+                }
+            }
+            catch { /* ignore */ }
         }
-        if (dto.FreeBytes.HasValue && dto.FreeBytes < 500L * 1024 * 1024)
+        else
         {
-            level = "critical";
-            label = "Critical — less than 500 MB free";
+            if (dto.FreeBytes.HasValue && dto.FreeBytes < 2L * 1024 * 1024 * 1024 && Rank(level) < Rank("high"))
+            {
+                level = "high";
+                label = "High — less than 2 GB free";
+            }
+            if (dto.FreeBytes.HasValue && dto.FreeBytes < 500L * 1024 * 1024)
+            {
+                level = "critical";
+                label = "Critical — less than 500 MB free";
+            }
         }
 
         dto.CapacityLevel = level;

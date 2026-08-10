@@ -14,6 +14,14 @@ public sealed class ServerConfig
 
     public string ListenUrl { get; set; } = "http://127.0.0.1:8000/";
 
+    /// <summary>
+    /// Planned database capacity in megabytes (set at install time). Used for SQLite fullness guidance.
+    /// </summary>
+    public long DatabaseSizeMb { get; set; } = 2048;
+
+    /// <summary>Install profile label: Small | Medium | Large | Custom.</summary>
+    public string CapacityProfile { get; set; } = "Medium";
+
     public static string ConfigDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Coalesce", "Server");
 
@@ -22,19 +30,35 @@ public sealed class ServerConfig
 
     public static string ConfigPath => Path.Combine(ConfigDirectory, "server.json");
 
+    /// <summary>Written by the installer; merged into server.json on first server start.</summary>
+    public static string CapacityOverlayPath => Path.Combine(ConfigDirectory, "capacity.json");
+
     public static string DefaultSqlitePath => Path.Combine(ConfigDirectory, "coalesce.db");
+
+    public static long DefaultDatabaseSizeMb => 2048;
+
+    public long PlannedCapacityBytes =>
+        Math.Max(100L, DatabaseSizeMb <= 0 ? DefaultDatabaseSizeMb : DatabaseSizeMb) * 1024L * 1024L;
 
     public static ServerConfig LoadOrCreate()
     {
         MigrateFromLegacyAppData();
         Directory.CreateDirectory(ConfigDirectory);
+        ServerConfig cfg;
         if (File.Exists(ConfigPath))
         {
             try
             {
                 var loaded = JsonConvert.DeserializeObject<ServerConfig>(File.ReadAllText(ConfigPath));
                 if (loaded != null && !string.IsNullOrWhiteSpace(loaded.ConnectionString))
-                    return loaded;
+                {
+                    cfg = loaded;
+                    if (cfg.DatabaseSizeMb <= 0) cfg.DatabaseSizeMb = DefaultDatabaseSizeMb;
+                    if (string.IsNullOrWhiteSpace(cfg.CapacityProfile)) cfg.CapacityProfile = "Medium";
+                    if (MergeCapacityOverlay(cfg))
+                        cfg.Save();
+                    return cfg;
+                }
             }
             catch
             {
@@ -42,14 +66,45 @@ public sealed class ServerConfig
             }
         }
 
-        var cfg = new ServerConfig
+        cfg = new ServerConfig
         {
             Provider = DatabaseProvider.Sqlite,
             ConnectionString = $"Data Source={DefaultSqlitePath}",
-            ListenUrl = "http://127.0.0.1:8000/"
+            ListenUrl = "http://127.0.0.1:8000/",
+            DatabaseSizeMb = DefaultDatabaseSizeMb,
+            CapacityProfile = "Medium"
         };
+        MergeCapacityOverlay(cfg);
         cfg.Save();
         return cfg;
+    }
+
+    /// <summary>
+    /// Applies installer-written capacity.json (DatabaseSizeMb / CapacityProfile), then removes the overlay.
+    /// </summary>
+    private static bool MergeCapacityOverlay(ServerConfig cfg)
+    {
+        if (!File.Exists(CapacityOverlayPath)) return false;
+        try
+        {
+            var overlay = JsonConvert.DeserializeObject<CapacityOverlay>(File.ReadAllText(CapacityOverlayPath));
+            if (overlay == null || overlay.DatabaseSizeMb < 100) return false;
+            cfg.DatabaseSizeMb = Math.Min(1024L * 1024L, overlay.DatabaseSizeMb); // cap 1 TB
+            if (!string.IsNullOrWhiteSpace(overlay.CapacityProfile))
+                cfg.CapacityProfile = overlay.CapacityProfile.Trim();
+            try { File.Delete(CapacityOverlayPath); } catch { /* keep if locked */ }
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private sealed class CapacityOverlay
+    {
+        public long DatabaseSizeMb { get; set; }
+        public string? CapacityProfile { get; set; }
     }
 
     /// <summary>
