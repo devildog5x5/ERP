@@ -14,11 +14,11 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.8/CoalesceSetup.exe) |
-| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.8/CoalesceClientSetup.exe) |
-| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.8/CoalesceServerSetup.exe) |
+| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.10/CoalesceSetup.exe) |
+| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.10/CoalesceClientSetup.exe) |
+| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.10/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.8](https://github.com/devildog5x5/ERP/releases/tag/v1.6.8)
+- Latest release: [v1.6.10](https://github.com/devildog5x5/ERP/releases/tag/v1.6.10)
 - Every installer asks up front — loudly — whether to install **Client**, **Server**, or **Both**.
 - Default login after install: `admin` / `admin`
 - Server listens at `http://127.0.0.1:8000` by default
