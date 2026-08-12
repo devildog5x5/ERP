@@ -1,35 +1,50 @@
 ﻿; Coalesce installers (C# / .NET Framework 4.8)
 ; Build with: ISCC /DPackage=combined|client|server installer\coalesce.iss
+;
+;   combined → CoalesceSetup.exe       (chooser: Both / Server / Client)
+;   client   → CoalesceClientSetup.exe (Client only — no chooser)
+;   server   → CoalesceServerSetup.exe (Server only — no chooser)
+;
 #ifndef Package
   #define Package "combined"
 #endif
 
-#define MyAppVersion "1.6.15"
-#define MyAppPublisher "Coalesce"
-#define MyAppURL "https://github.com/devildog5x5/ERP"
+#include "version.iss"
+
 #define MyAppName "Coalesce"
 #define AppIdGuid "{{D0F6B2E5-7A81-4C24-AF5D-B3C2E4F60719}"
 #define DefaultDir "{localappdata}\Programs\Coalesce"
-#define UninstallIcon "{app}\Client\Coalesce.Client.exe"
-
-#if Package == "client"
-  #define OutputName "CoalesceClientSetup"
-  #define VersionDesc "Coalesce installer (Client / Server / Both)"
-  #define DefaultRole "client"
-#elif Package == "server"
-  #define OutputName "CoalesceServerSetup"
-  #define VersionDesc "Coalesce installer (Client / Server / Both)"
-  #define DefaultRole "server"
-#else
-  #define OutputName "CoalesceSetup"
-  #define VersionDesc "Coalesce installer (Client / Server / Both)"
-  #define DefaultRole "both"
-#endif
 
 ; Prior Ledgerly AppIds (uninstall on upgrade)
 #define LegacyUnifiedAppId "{{C9E5A1D4-6F70-4B13-9E4C-A2B1D3E5F708}"
 #define LegacyClientAppId "{{A7B3C2D1-4E5F-6789-A0B1-C2D3E4F50617}"
 #define LegacyServerAppId "{{B8C4D3E2-5F60-789A-B1C2-D3E4F5061728}"
+
+#if Package == "client"
+  #define OutputName "CoalesceClientSetup"
+  #define VersionDesc "Coalesce Client installer"
+  #define InfoBefore "info-client.txt"
+  #define UninstallIcon "{app}\Client\Coalesce.Client.exe"
+  #define IsChooser "0"
+  #define HasServer "0"
+  #define HasClient "1"
+#elif Package == "server"
+  #define OutputName "CoalesceServerSetup"
+  #define VersionDesc "Coalesce Server installer"
+  #define InfoBefore "info-server.txt"
+  #define UninstallIcon "{app}\Server\Coalesce.Server.exe"
+  #define IsChooser "0"
+  #define HasServer "1"
+  #define HasClient "0"
+#else
+  #define OutputName "CoalesceSetup"
+  #define VersionDesc "Coalesce installer (Client / Server / Both)"
+  #define InfoBefore "info-combined.txt"
+  #define UninstallIcon "{app}\Client\Coalesce.Client.exe"
+  #define IsChooser "1"
+  #define HasServer "1"
+  #define HasClient "1"
+#endif
 
 [Setup]
 AppId={#AppIdGuid}
@@ -63,6 +78,8 @@ UsePreviousGroup=yes
 CloseApplications=yes
 RestartApplications=no
 ShowComponentSizes=no
+AlwaysShowComponentsList=no
+InfoBeforeFile={#InfoBefore}
 ; One Coalesce installer at a time (Combined / Client / Server share this mutex)
 SetupMutex=Coalesce_ERP_Setup_Mutex
 
@@ -72,6 +89,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Messages]
 SetupAppRunningError=Coalesce Setup is already running.%n%nClose the other installer window, then try again.
 
+#if IsChooser == "1"
+; Silent: CoalesceSetup.exe /TYPE=full|server|client
 [Types]
 Name: "full"; Description: "Both (Client and Server)"
 Name: "server"; Description: "Server only"
@@ -81,34 +100,80 @@ Name: "custom"; Description: "Custom installation"; Flags: iscustom
 [Components]
 Name: "server"; Description: "Coalesce Server (API on http://127.0.0.1:8000)"; Types: full server custom; Flags: checkablealone
 Name: "client"; Description: "Coalesce Client (WPF desktop UI)"; Types: full client custom; Flags: checkablealone
+#endif
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "autostartserver"; Description: "Start Coalesce Server when I log in"; GroupDescription: "Startup options:"; Components: server; Flags: unchecked
-Name: "autostartclient"; Description: "Start Coalesce Client when I log in"; GroupDescription: "Startup options:"; Components: client; Flags: unchecked
+#if IsChooser == "1"
+Name: "autostartserver"; Description: "Start Coalesce Server when I log in"; GroupDescription: "Startup options:"; Flags: unchecked; Components: server
+Name: "autostartclient"; Description: "Start Coalesce Client when I log in"; GroupDescription: "Startup options:"; Flags: unchecked; Components: client
+#elif Package == "server"
+Name: "autostartserver"; Description: "Start Coalesce Server when I log in"; GroupDescription: "Startup options:"; Flags: unchecked
+#elif Package == "client"
+Name: "autostartclient"; Description: "Start Coalesce Client when I log in"; GroupDescription: "Startup options:"; Flags: unchecked
+#endif
 
 [Files]
+#if HasServer == "1"
+#if IsChooser == "1"
 Source: "..\dist\CoalesceServer\*"; DestDir: "{app}\Server"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: server
+#else
+Source: "..\dist\CoalesceServer\*"; DestDir: "{app}\Server"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
+#endif
+#if HasClient == "1"
+#if IsChooser == "1"
 Source: "..\dist\CoalesceClient\*"; DestDir: "{app}\Client"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: client
+#else
+Source: "..\dist\CoalesceClient\*"; DestDir: "{app}\Client"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
+#endif
 
 [Icons]
+#if HasServer == "1"
+#if IsChooser == "1"
 Name: "{group}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"; Components: server
-Name: "{group}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Components: client
-Name: "{group}\Uninstall Coalesce"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"; Tasks: desktopicon; Components: server
-Name: "{autodesktop}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Tasks: desktopicon; Components: client
 Name: "{userstartup}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"; Tasks: autostartserver; Components: server
+#else
+Name: "{group}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"
+Name: "{autodesktop}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"; Tasks: desktopicon
+Name: "{userstartup}\Coalesce Server"; Filename: "{app}\Server\Coalesce.Server.exe"; WorkingDir: "{app}\Server"; Tasks: autostartserver
+#endif
+#endif
+#if HasClient == "1"
+#if IsChooser == "1"
+Name: "{group}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Components: client
+Name: "{autodesktop}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Tasks: desktopicon; Components: client
 Name: "{userstartup}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Tasks: autostartclient; Components: client
+#else
+Name: "{group}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"
+Name: "{autodesktop}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Tasks: desktopicon
+Name: "{userstartup}\Coalesce Client"; Filename: "{app}\Client\Coalesce.Client.exe"; WorkingDir: "{app}\Client"; Tasks: autostartclient
+#endif
+#endif
+Name: "{group}\Uninstall Coalesce"; Filename: "{uninstallexe}"
 
 [Run]
+#if HasServer == "1"
+#if IsChooser == "1"
 Filename: "{app}\Server\Coalesce.Server.exe"; Description: "Launch Coalesce Server now"; Flags: nowait postinstall skipifsilent unchecked; Components: server; WorkingDir: "{app}\Server"
+#else
+Filename: "{app}\Server\Coalesce.Server.exe"; Description: "Launch Coalesce Server now"; Flags: nowait postinstall skipifsilent unchecked; WorkingDir: "{app}\Server"
+#endif
+#endif
+#if HasClient == "1"
+#if IsChooser == "1"
 Filename: "{app}\Client\Coalesce.Client.exe"; Description: "Launch Coalesce Client now"; Flags: nowait postinstall skipifsilent unchecked; Components: client; WorkingDir: "{app}\Client"
+#else
+Filename: "{app}\Client\Coalesce.Client.exe"; Description: "Launch Coalesce Client now"; Flags: nowait postinstall skipifsilent unchecked; WorkingDir: "{app}\Client"
+#endif
+#endif
 
 [Code]
 var
   RolePage: TWizardPage;
-  RoleHeadline: TNewStaticText;
-  RoleSubhead: TNewStaticText;
+  RoleIntro: TNewStaticText;
   RoleBoth: TRadioButton;
   RoleClient: TRadioButton;
   RoleServer: TRadioButton;
@@ -246,124 +311,184 @@ begin
       'Close the apps, uninstall from Apps & features, then run this installer again.';
 end;
 
-procedure ApplyRoleSelection();
+#if IsChooser == "1"
+procedure SelectBoth(Sender: TObject);
 begin
-  if RoleBoth.Checked then
-    WizardSelectComponents('server,client')
-  else if RoleClient.Checked then
-    WizardSelectComponents('client,!server')
-  else
-    WizardSelectComponents('server,!client');
+  RoleBoth.Checked := True;
 end;
 
-procedure InitializeWizard();
+procedure SelectServer(Sender: TObject);
+begin
+  RoleServer.Checked := True;
+end;
+
+procedure SelectClient(Sender: TObject);
+begin
+  RoleClient.Checked := True;
+end;
+
+procedure ApplyRoleSelection();
+begin
+  if RoleServer.Checked then
+  begin
+    WizardSelectComponents('server,!client');
+    WizardForm.TypesCombo.ItemIndex := 1;
+  end
+  else if RoleClient.Checked then
+  begin
+    WizardSelectComponents('client,!server');
+    WizardForm.TypesCombo.ItemIndex := 2;
+  end
+  else
+  begin
+    WizardSelectComponents('server,client');
+    WizardForm.TypesCombo.ItemIndex := 0;
+  end;
+end;
+
+procedure SyncRadiosFromType();
+var
+  TypeName: String;
+begin
+  TypeName := WizardSetupType(False);
+  if CompareText(TypeName, 'server') = 0 then
+    RoleServer.Checked := True
+  else if CompareText(TypeName, 'client') = 0 then
+    RoleClient.Checked := True
+  else
+    RoleBoth.Checked := True;
+end;
+
+function ChoiceSummary(): String;
+begin
+  if RoleServer.Checked then
+    Result := 'SERVER only — API and database on this PC'
+  else if RoleClient.Checked then
+    Result := 'CLIENT only — desktop UI (needs a running Server)'
+  else
+    Result := 'BOTH — Server and Client on this PC';
+end;
+
+procedure CreateRolePage();
 var
   TopY: Integer;
 begin
   RolePage := CreateCustomPage(wpWelcome,
-    'WHAT DO YOU WANT TO INSTALL?',
-    'Choose Client, Server, or BOTH before anything else.');
+    'What do you want to install?',
+    'Pick one option for this computer — Client, Server, or Both.');
 
-  RoleHeadline := TNewStaticText.Create(RolePage);
-  RoleHeadline.Parent := RolePage.Surface;
-  RoleHeadline.Caption := 'INSTALL CLIENT, SERVER, OR BOTH';
-  RoleHeadline.Font.Name := 'Segoe UI';
-  RoleHeadline.Font.Size := 16;
-  RoleHeadline.Font.Style := [fsBold];
-  RoleHeadline.Font.Color := clMaroon;
-  RoleHeadline.AutoSize := True;
-  RoleHeadline.Left := 0;
-  RoleHeadline.Top := 0;
+  RoleIntro := TNewStaticText.Create(RolePage);
+  RoleIntro.Parent := RolePage.Surface;
+  RoleIntro.Caption :=
+    'Coalesce is two programs: a Server that holds your data, and a Client ' +
+    'you work in every day. Choose what belongs on THIS PC.';
+  RoleIntro.Font.Name := 'Segoe UI';
+  RoleIntro.Font.Size := 10;
+  RoleIntro.AutoSize := False;
+  RoleIntro.WordWrap := True;
+  RoleIntro.Left := 0;
+  RoleIntro.Top := 0;
+  RoleIntro.Width := RolePage.SurfaceWidth;
+  RoleIntro.Height := ScaleY(40);
 
-  RoleSubhead := TNewStaticText.Create(RolePage);
-  RoleSubhead.Parent := RolePage.Surface;
-  RoleSubhead.Caption := 'Where ERP and CRM come together - pick one option below.';
-  RoleSubhead.Font.Name := 'Segoe UI';
-  RoleSubhead.Font.Size := 11;
-  RoleSubhead.Font.Style := [fsBold];
-  RoleSubhead.AutoSize := True;
-  RoleSubhead.Left := 0;
-  RoleSubhead.Top := RoleHeadline.Top + RoleHeadline.Height + ScaleY(8);
-
-  TopY := RoleSubhead.Top + RoleSubhead.Height + ScaleY(18);
+  TopY := RoleIntro.Top + RoleIntro.Height + ScaleY(14);
 
   RoleBoth := TRadioButton.Create(RolePage);
   RoleBoth.Parent := RolePage.Surface;
-  RoleBoth.Caption := 'BOTH  -  Client and Server (recommended)';
+  RoleBoth.Caption := 'BOTH  —  Server and Client';
   RoleBoth.Font.Name := 'Segoe UI';
-  RoleBoth.Font.Size := 12;
+  RoleBoth.Font.Size := 13;
   RoleBoth.Font.Style := [fsBold];
-  RoleBoth.Left := ScaleX(4);
+  RoleBoth.Left := 0;
   RoleBoth.Top := TopY;
-  RoleBoth.Width := RolePage.SurfaceWidth - ScaleX(8);
+  RoleBoth.Width := RolePage.SurfaceWidth;
   RoleBoth.Height := ScaleY(24);
-  RoleBoth.Checked := '{#DefaultRole}' = 'both';
+  RoleBoth.Checked := True;
+  RoleBoth.OnClick := @SelectBoth;
 
   RoleHintBoth := TNewStaticText.Create(RolePage);
   RoleHintBoth.Parent := RolePage.Surface;
-  RoleHintBoth.Caption := 'Full Coalesce on this PC: API/database host + desktop UI.';
+  RoleHintBoth.Caption :=
+    'Everything on this PC. Best for a single-computer shop. ' +
+    'After install: start Server first, then Client.';
   RoleHintBoth.Font.Name := 'Segoe UI';
   RoleHintBoth.Font.Size := 9;
-  RoleHintBoth.Left := ScaleX(28);
+  RoleHintBoth.Left := ScaleX(22);
   RoleHintBoth.Top := RoleBoth.Top + RoleBoth.Height + ScaleY(2);
-  RoleHintBoth.Width := RolePage.SurfaceWidth - ScaleX(32);
+  RoleHintBoth.Width := RolePage.SurfaceWidth - ScaleX(22);
+  RoleHintBoth.AutoSize := False;
   RoleHintBoth.WordWrap := True;
+  RoleHintBoth.Height := ScaleY(34);
+  RoleHintBoth.Cursor := crHand;
+  RoleHintBoth.OnClick := @SelectBoth;
 
-  TopY := RoleHintBoth.Top + RoleHintBoth.Height + ScaleY(16);
-
-  RoleClient := TRadioButton.Create(RolePage);
-  RoleClient.Parent := RolePage.Surface;
-  RoleClient.Caption := 'CLIENT ONLY  -  Desktop UI';
-  RoleClient.Font.Name := 'Segoe UI';
-  RoleClient.Font.Size := 12;
-  RoleClient.Font.Style := [fsBold];
-  RoleClient.Left := ScaleX(4);
-  RoleClient.Top := TopY;
-  RoleClient.Width := RolePage.SurfaceWidth - ScaleX(8);
-  RoleClient.Height := ScaleY(24);
-  RoleClient.Checked := '{#DefaultRole}' = 'client';
-
-  RoleHintClient := TNewStaticText.Create(RolePage);
-  RoleHintClient.Parent := RolePage.Surface;
-  RoleHintClient.Caption := 'Installs the WPF client. A Coalesce Server must already be running somewhere.';
-  RoleHintClient.Font.Name := 'Segoe UI';
-  RoleHintClient.Font.Size := 9;
-  RoleHintClient.Left := ScaleX(28);
-  RoleHintClient.Top := RoleClient.Top + RoleClient.Height + ScaleY(2);
-  RoleHintClient.Width := RolePage.SurfaceWidth - ScaleX(32);
-  RoleHintClient.WordWrap := True;
-
-  TopY := RoleHintClient.Top + RoleHintClient.Height + ScaleY(16);
+  TopY := RoleHintBoth.Top + RoleHintBoth.Height + ScaleY(12);
 
   RoleServer := TRadioButton.Create(RolePage);
   RoleServer.Parent := RolePage.Surface;
-  RoleServer.Caption := 'SERVER ONLY  -  API and database';
+  RoleServer.Caption := 'SERVER  —  data and API';
   RoleServer.Font.Name := 'Segoe UI';
-  RoleServer.Font.Size := 12;
+  RoleServer.Font.Size := 13;
   RoleServer.Font.Style := [fsBold];
-  RoleServer.Left := ScaleX(4);
+  RoleServer.Left := 0;
   RoleServer.Top := TopY;
-  RoleServer.Width := RolePage.SurfaceWidth - ScaleX(8);
+  RoleServer.Width := RolePage.SurfaceWidth;
   RoleServer.Height := ScaleY(24);
-  RoleServer.Checked := '{#DefaultRole}' = 'server';
+  RoleServer.OnClick := @SelectServer;
 
   RoleHintServer := TNewStaticText.Create(RolePage);
   RoleHintServer.Parent := RolePage.Surface;
-  RoleHintServer.Caption := 'Installs the API host (default http://127.0.0.1:8000). Clients connect to it.';
+  RoleHintServer.Caption :=
+    'Install once on the machine that stores inventory and orders. ' +
+    'Listens on http://127.0.0.1:8000. Default login: admin / admin.';
   RoleHintServer.Font.Name := 'Segoe UI';
   RoleHintServer.Font.Size := 9;
-  RoleHintServer.Left := ScaleX(28);
+  RoleHintServer.Left := ScaleX(22);
   RoleHintServer.Top := RoleServer.Top + RoleServer.Height + ScaleY(2);
-  RoleHintServer.Width := RolePage.SurfaceWidth - ScaleX(32);
+  RoleHintServer.Width := RolePage.SurfaceWidth - ScaleX(22);
+  RoleHintServer.AutoSize := False;
   RoleHintServer.WordWrap := True;
+  RoleHintServer.Height := ScaleY(34);
+  RoleHintServer.Cursor := crHand;
+  RoleHintServer.OnClick := @SelectServer;
 
-  if (not RoleBoth.Checked) and (not RoleClient.Checked) and (not RoleServer.Checked) then
-    RoleBoth.Checked := True;
+  TopY := RoleHintServer.Top + RoleHintServer.Height + ScaleY(12);
 
-  ApplyRoleSelection();
+  RoleClient := TRadioButton.Create(RolePage);
+  RoleClient.Parent := RolePage.Surface;
+  RoleClient.Caption := 'CLIENT  —  the screen you work in';
+  RoleClient.Font.Name := 'Segoe UI';
+  RoleClient.Font.Size := 13;
+  RoleClient.Font.Style := [fsBold];
+  RoleClient.Left := 0;
+  RoleClient.Top := TopY;
+  RoleClient.Width := RolePage.SurfaceWidth;
+  RoleClient.Height := ScaleY(24);
+  RoleClient.OnClick := @SelectClient;
 
-  { Database size page — shown when Server is included }
-  DbSizePage := CreateCustomPage(RolePage.ID,
+  RoleHintClient := TNewStaticText.Create(RolePage);
+  RoleHintClient.Parent := RolePage.Surface;
+  RoleHintClient.Caption :=
+    'Install on each workstation. Needs a running Server ' +
+    '(on this PC or another machine on your network).';
+  RoleHintClient.Font.Name := 'Segoe UI';
+  RoleHintClient.Font.Size := 9;
+  RoleHintClient.Left := ScaleX(22);
+  RoleHintClient.Top := RoleClient.Top + RoleClient.Height + ScaleY(2);
+  RoleHintClient.Width := RolePage.SurfaceWidth - ScaleX(22);
+  RoleHintClient.AutoSize := False;
+  RoleHintClient.WordWrap := True;
+  RoleHintClient.Height := ScaleY(34);
+  RoleHintClient.Cursor := crHand;
+  RoleHintClient.OnClick := @SelectClient;
+end;
+#endif
+
+procedure CreateDbSizePage(AfterPageId: Integer);
+var
+  TopY: Integer;
+begin
+  DbSizePage := CreateCustomPage(AfterPageId,
     'DATABASE SIZE',
     'Choose how large you expect this Coalesce database to grow.');
 
@@ -472,9 +597,27 @@ begin
   DbSizeHint.Height := ScaleY(40);
 end;
 
+procedure InitializeWizard();
+begin
+#if IsChooser == "1"
+  CreateRolePage();
+  SyncRadiosFromType();
+  ApplyRoleSelection();
+  CreateDbSizePage(RolePage.ID);
+#elif HasServer == "1"
+  CreateDbSizePage(wpWelcome);
+#endif
+end;
+
 function ServerComponentSelected(): Boolean;
 begin
+#if HasServer == "0"
+  Result := False;
+#elif IsChooser == "1"
   Result := WizardIsComponentSelected('server');
+#else
+  Result := True;
+#endif
 end;
 
 function SelectedDatabaseSizeMb(): Integer;
@@ -546,6 +689,8 @@ var
 begin
   if not ServerComponentSelected() then
     exit;
+  if DbSizePage = nil then
+    exit;
 
   Dir := ExpandConstant('{localappdata}\Coalesce\Server');
   if not DirExists(Dir) then
@@ -608,9 +753,12 @@ end;
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
+#if IsChooser == "1"
   if PageID = wpSelectComponents then
     Result := True
-  else if (DbSizePage <> nil) and (PageID = DbSizePage.ID) then
+  else
+#endif
+  if (DbSizePage <> nil) and (PageID = DbSizePage.ID) then
     Result := not ServerComponentSelected();
 end;
 
@@ -619,17 +767,20 @@ var
   SizeMb: Integer;
 begin
   Result := True;
-  if CurPageID = RolePage.ID then
+#if IsChooser == "1"
+  if (RolePage <> nil) and (CurPageID = RolePage.ID) then
   begin
     if (not RoleBoth.Checked) and (not RoleClient.Checked) and (not RoleServer.Checked) then
     begin
-      MsgBox('Choose CLIENT, SERVER, or BOTH before continuing.', mbError, MB_OK);
+      MsgBox('Choose BOTH, SERVER, or CLIENT before continuing.', mbError, MB_OK);
       Result := False;
       exit;
     end;
     ApplyRoleSelection();
   end
-  else if (DbSizePage <> nil) and (CurPageID = DbSizePage.ID) then
+  else
+#endif
+  if (DbSizePage <> nil) and (CurPageID = DbSizePage.ID) then
   begin
     SizeMb := SelectedDatabaseSizeMb();
     if SizeMb < 100 then
@@ -646,6 +797,27 @@ begin
     end;
   end;
 end;
+
+#if IsChooser == "1"
+function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,
+  MemoTypeInfo, MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
+var
+  S: String;
+begin
+  S := 'Installation choice:' + NewLine;
+  S := S + Space + ChoiceSummary() + NewLine + NewLine;
+  S := S + MemoDirInfo + NewLine + NewLine;
+  if MemoGroupInfo <> '' then
+    S := S + MemoGroupInfo + NewLine + NewLine;
+  if MemoTasksInfo <> '' then
+    S := S + MemoTasksInfo + NewLine + NewLine;
+  if RoleClient.Checked then
+    S := S + 'Note: start Coalesce Server before opening the Client.' + NewLine
+  else if RoleBoth.Checked then
+    S := S + 'Tip: after setup, launch Server first, then Client.' + NewLine;
+  Result := S;
+end;
+#endif
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
