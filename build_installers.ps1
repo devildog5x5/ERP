@@ -1,7 +1,7 @@
 # Build Coalesce (.NET Framework 4.8) binaries and ALL three Inno Setup installers:
-#   CoalesceSetup.exe / CoalesceClientSetup.exe / CoalesceServerSetup.exe
-#   Each includes Client + Server payloads and opens with a loud
-#   Client / Server / Both chooser (default selection differs by package name).
+#   CoalesceSetup.exe       — chooser (Both / Server / Client)
+#   CoalesceClientSetup.exe — Client only (no chooser)
+#   CoalesceServerSetup.exe — Server only (no chooser)
 # Requires: .NET SDK + net48 targeting pack, Inno Setup 6 (ISCC.exe).
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -64,3 +64,6 @@ Get-ChildItem $publishDir -Filter "Coalesce*Setup.exe" | Sort-Object Name | ForE
 }
 Write-Host "  Server payload: $serverOut"
 Write-Host "  Client payload: $clientOut"
+Write-Host "  Chooser:  CoalesceSetup.exe       (Both / Server / Client)"
+Write-Host "  Client:   CoalesceClientSetup.exe (Client only)"
+Write-Host "  Server:   CoalesceServerSetup.exe (Server only)"

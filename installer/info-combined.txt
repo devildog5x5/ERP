@@ -1,0 +1,15 @@
+Coalesce
+========
+
+Where ERP and CRM come together.
+
+This installer lets you choose what belongs on THIS PC:
+
+  BOTH    — Server and Client (recommended for a single-PC shop)
+  SERVER  — data and API host only
+  CLIENT  — the desktop screen you work in (needs a running Server)
+
+Default login after Server is running: admin / admin
+Server listens at http://127.0.0.1:8000
+
+Requires 64-bit Windows 7 SP1 or later and .NET Framework 4.8.
