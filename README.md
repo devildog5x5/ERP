@@ -14,17 +14,19 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceSetup.exe) |
-| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceClientSetup.exe) |
-| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceServerSetup.exe) |
+| **Combined (chooser)** | One wizard — pick **Both**, **Server**, or **Client** | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceSetup.exe) |
+| **Client only** | Desktop UI only (talks to a running Coalesce Server) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceClientSetup.exe) |
+| **Server only** | API / database host only | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.15](https://github.com/devildog5x5/ERP/releases/tag/v1.6.15)
-- Every installer asks up front — loudly — whether to install **Client**, **Server**, or **Both**.
+- Latest published binaries: [v1.6.15](https://github.com/devildog5x5/ERP/releases/tag/v1.6.15) (installer sources on this branch target **1.6.16** — rebuild on Windows to publish)
+- **CoalesceSetup.exe** opens with a clear **Both / Server / Client** page (Recommended badge on Both; hints are clickable). Silent: `/TYPE=full|server|client`.
+- **Client** and **Server** packages install that role only — no chooser, smaller payload.
 - Server installs also ask for a **planned database size** (Small 500 MB / Medium 2 GB / Large 10 GB / Custom). That choice is saved quietly into the server config and drives Database status warnings — not a hard engine limit. Need more room later? Use **Settings → Grow database…**.
 - Default login after install: `admin` / `admin`
 - Server listens at `http://127.0.0.1:8000` by default
 - Requires **64-bit Windows** and **[.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48)**
 - Rebuild locally: `powershell -File .\build_installers.ps1` → `installers\CoalesceSetup.exe`, `CoalesceClientSetup.exe`, `CoalesceServerSetup.exe`
+- Source check (no Inno needed): `python scripts/check_installers.py`
 
 ## Requirements
 
@@ -116,7 +118,7 @@ dotnet run --project src/Ledgerly.Server -- --demo
 powershell -File .\build_installers.ps1
 ```
 
-Produces Combined / Client / Server setups under `installers\`.
+Produces three setups under `installers\`: chooser (`CoalesceSetup.exe`), Client-only, and Server-only.
 
 ## Default credentials
 

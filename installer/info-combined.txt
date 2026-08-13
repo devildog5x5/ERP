@@ -1,0 +1,15 @@
+Coalesce
+========
+
+Where ERP and CRM come together.
+
+This installer asks what belongs on THIS PC:
+
+  BOTH    — Server and Client (typical single-PC shop)
+  SERVER  — data and API host only
+  CLIENT  — desktop UI (needs a running Server)
+
+After Server is up: sign in with admin / admin
+Default API address: http://127.0.0.1:8000
+
+Needs 64-bit Windows 7 SP1 or later and .NET Framework 4.8.
