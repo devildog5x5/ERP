@@ -11,8 +11,13 @@
 
 #include "version.iss"
 
-#define AppIdGuid "{{D0F6B2E5-7A81-4C24-AF5D-B3C2E4F60719}"
 #define DefaultDir "{localappdata}\Programs\Coalesce"
+
+; Per-package AppIds so Client-only and Server-only can coexist.
+; Combined replaces either dedicated install when used.
+#define CombinedAppId "{{D0F6B2E5-7A81-4C24-AF5D-B3C2E4F60719}"
+#define ClientAppId "{{E1A7B3C2-D4E5-4F60-8A91-B2C3D4E5F617}"
+#define ServerAppId "{{F2B8C4D3-E5F6-4071-9BA2-C3D4E5F61728}"
 
 ; Old Ledgerly AppIds — still uninstalled on upgrade
 #define LegacyUnifiedAppId "{{C9E5A1D4-6F70-4B13-9E4C-A2B1D3E5F708}"
@@ -25,6 +30,7 @@
   #define VersionDesc "Coalesce Client installer"
   #define InfoBefore "info-client.txt"
   #define UninstallIcon "{app}\Client\Coalesce.Client.exe"
+  #define AppIdGuid "{{E1A7B3C2-D4E5-4F60-8A91-B2C3D4E5F617}"
   #define IsChooser "0"
   #define HasServer "0"
   #define HasClient "1"
@@ -34,6 +40,7 @@
   #define VersionDesc "Coalesce Server installer"
   #define InfoBefore "info-server.txt"
   #define UninstallIcon "{app}\Server\Coalesce.Server.exe"
+  #define AppIdGuid "{{F2B8C4D3-E5F6-4071-9BA2-C3D4E5F61728}"
   #define IsChooser "0"
   #define HasServer "1"
   #define HasClient "0"
@@ -43,6 +50,7 @@
   #define VersionDesc "Coalesce installer (Client / Server / Both)"
   #define InfoBefore "info-combined.txt"
   #define UninstallIcon "{app}\Client\Coalesce.Client.exe"
+  #define AppIdGuid "{{D0F6B2E5-7A81-4C24-AF5D-B3C2E4F60719}"
   #define IsChooser "1"
   #define HasServer "1"
   #define HasClient "1"
@@ -59,6 +67,7 @@ AppSupportURL={#MyAppURL}
 DefaultDirName={#DefaultDir}
 DefaultGroupName=Coalesce
 DisableProgramGroupPage=no
+DisableWelcomePage=yes
 OutputDir=..\dist\installers
 OutputBaseFilename={#OutputName}
 Compression=lzma
@@ -301,11 +310,32 @@ end;
 
 function UninstallPreviousVersions(): Boolean;
 begin
+  { Role-aware cleanup: Client-only must not wipe a dedicated Server install,
+    and vice versa. Running a dedicated package does replace an older unified
+    Combined install (same folder). Combined clears dedicated Client/Server
+    entries so one product listing remains. }
+  Result := UninstallByAppId('{#AppIdGuid}');
+  if not Result then
+    exit;
+
+#if Package == "client"
   Result :=
-    UninstallByAppId('{#AppIdGuid}') and
+    UninstallByAppId('{#CombinedAppId}') and
+    UninstallByAppId('{#LegacyUnifiedAppId}') and
+    UninstallByAppId('{#LegacyClientAppId}');
+#elif Package == "server"
+  Result :=
+    UninstallByAppId('{#CombinedAppId}') and
+    UninstallByAppId('{#LegacyUnifiedAppId}') and
+    UninstallByAppId('{#LegacyServerAppId}');
+#else
+  Result :=
+    UninstallByAppId('{#ClientAppId}') and
+    UninstallByAppId('{#ServerAppId}') and
     UninstallByAppId('{#LegacyUnifiedAppId}') and
     UninstallByAppId('{#LegacyClientAppId}') and
     UninstallByAppId('{#LegacyServerAppId}');
+#endif
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
@@ -334,20 +364,39 @@ end;
 
 procedure PaintRolePanels();
 begin
+  { Selected card sinks and picks up a light highlight so the choice is obvious. }
   if RoleBoth.Checked then
-    RoleBothPanel.BevelOuter := bvLowered
+  begin
+    RoleBothPanel.BevelOuter := bvLowered;
+    RoleBothPanel.Color := clInfoBk;
+  end
   else
+  begin
     RoleBothPanel.BevelOuter := bvRaised;
+    RoleBothPanel.Color := clBtnFace;
+  end;
 
   if RoleServer.Checked then
-    RoleServerPanel.BevelOuter := bvLowered
+  begin
+    RoleServerPanel.BevelOuter := bvLowered;
+    RoleServerPanel.Color := clInfoBk;
+  end
   else
+  begin
     RoleServerPanel.BevelOuter := bvRaised;
+    RoleServerPanel.Color := clBtnFace;
+  end;
 
   if RoleClient.Checked then
-    RoleClientPanel.BevelOuter := bvLowered
+  begin
+    RoleClientPanel.BevelOuter := bvLowered;
+    RoleClientPanel.Color := clInfoBk;
+  end
   else
+  begin
     RoleClientPanel.BevelOuter := bvRaised;
+    RoleClientPanel.Color := clBtnFace;
+  end;
 end;
 
 procedure SelectBoth(Sender: TObject);
