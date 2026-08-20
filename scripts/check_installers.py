@@ -74,6 +74,12 @@ def main() -> int:
         ('#define IsChooser "1"' in iss and '#define IsChooser "0"' in iss, "chooser vs dedicated flags"),
         ('#define HasServer "0"' in iss and '#define HasClient "0"' in iss, "payload exclusion flags"),
         ('MyAppName "Coalesce Client"' in iss and 'MyAppName "Coalesce Server"' in iss, "per-package AppName"),
+        ("CombinedAppId" in iss and "ClientAppId" in iss and "ServerAppId" in iss, "separate AppIds defined"),
+        ("E1A7B3C2-D4E5-4F60-8A91-B2C3D4E5F617" in iss, "dedicated Client AppId"),
+        ("F2B8C4D3-E5F6-4071-9BA2-C3D4E5F61728" in iss, "dedicated Server AppId"),
+        ("Role-aware cleanup" in iss, "role-aware uninstall comments"),
+        ("clInfoBk" in iss, "selected card highlight"),
+        ("DisableWelcomePage=yes" in iss, "welcome page skipped"),
     ]
 
     failed = False
