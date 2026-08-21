@@ -5,9 +5,11 @@ Where ERP and CRM come together.
 
 Next you will pick what belongs on THIS PC:
 
-  BOTH    — Server and Client (typical single-PC shop)
-  SERVER  — data and API host only
-  CLIENT  — desktop UI (needs a running Server)
+  1  BOTH    — Server and Client (typical single-PC shop)
+  2  SERVER  — data and API host only
+  3  CLIENT  — desktop UI (needs a running Server)
+
+Click a card, press 1 / 2 / 3, or double-click to select and continue.
 
 After Server is up, sign in with admin / admin.
 Default API: http://127.0.0.1:8000

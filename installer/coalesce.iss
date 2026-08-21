@@ -185,6 +185,7 @@ Filename: "{app}\Client\Coalesce.Client.exe"; Description: "Launch Coalesce Clie
 var
   RolePage: TWizardPage;
   RoleIntro: TNewStaticText;
+  RoleSummary: TNewStaticText;
   RoleFoot: TNewStaticText;
   RoleBothPanel: TPanel;
   RoleServerPanel: TPanel;
@@ -196,6 +197,7 @@ var
   RoleHintClient: TNewStaticText;
   RoleHintServer: TNewStaticText;
   RoleBadge: TNewStaticText;
+  PrevWizardKeyDown: TKeyEvent;
   DbSizePage: TWizardPage;
   DbSizeHeadline: TNewStaticText;
   DbSizeSubhead: TNewStaticText;
@@ -362,6 +364,23 @@ begin
   WizardForm.TypesCombo.ItemIndex := 0;
 end;
 
+function ChoiceSummary(): String;
+begin
+  if RoleServer.Checked then
+    Result := 'SERVER only — API and database on this PC'
+  else if RoleClient.Checked then
+    Result := 'CLIENT only — desktop UI (needs a running Server)'
+  else
+    Result := 'BOTH — Server and Client on this PC';
+end;
+
+procedure UpdateRoleSummary();
+begin
+  if RoleSummary = nil then
+    exit;
+  RoleSummary.Caption := 'You selected:  ' + ChoiceSummary();
+end;
+
 procedure PaintRolePanels();
 begin
   { Selected card sinks and picks up a light highlight so the choice is obvious. }
@@ -397,6 +416,8 @@ begin
     RoleClientPanel.BevelOuter := bvRaised;
     RoleClientPanel.Color := clBtnFace;
   end;
+
+  UpdateRoleSummary();
 end;
 
 procedure SelectBoth(Sender: TObject);
@@ -415,6 +436,34 @@ procedure SelectClient(Sender: TObject);
 begin
   RoleClient.Checked := True;
   PaintRolePanels();
+end;
+
+{ Keys 1 / 2 / 3 pick a card while the chooser page is showing. }
+procedure WizardKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if Assigned(PrevWizardKeyDown) then
+    PrevWizardKeyDown(Sender, Key, Shift);
+
+  if (RolePage = nil) or (WizardForm.CurPageID <> RolePage.ID) then
+    exit;
+
+  case Key of
+    Ord('1'), 97: { main '1' or numpad 1 }
+      begin
+        SelectBoth(nil);
+        Key := 0;
+      end;
+    Ord('2'), 98:
+      begin
+        SelectServer(nil);
+        Key := 0;
+      end;
+    Ord('3'), 99:
+      begin
+        SelectClient(nil);
+        Key := 0;
+      end;
+  end;
 end;
 
 { Double-click a card to select it and move on — same idea as most wizards. }
@@ -470,16 +519,6 @@ begin
   PaintRolePanels();
 end;
 
-function ChoiceSummary(): String;
-begin
-  if RoleServer.Checked then
-    Result := 'SERVER only — API and database on this PC'
-  else if RoleClient.Checked then
-    Result := 'CLIENT only — desktop UI (needs a running Server)'
-  else
-    Result := 'BOTH — Server and Client on this PC';
-end;
-
 function MakeRolePanel(ParentPage: TWizardPage; TopY, HeightPx: Integer): TPanel;
 begin
   Result := TPanel.Create(ParentPage);
@@ -502,7 +541,7 @@ var
 begin
   RolePage := CreateCustomPage(wpInfoBefore,
     'Choose what to install',
-    'Three clear options. Click a box, or double-click to select and continue.');
+    'Three clear options. Click a box, press 1 / 2 / 3, or double-click to continue.');
 
   RoleIntro := TNewStaticText.Create(RolePage);
   RoleIntro.Parent := RolePage.Surface;
@@ -528,7 +567,7 @@ begin
 
   RoleBoth := TRadioButton.Create(RolePage);
   RoleBoth.Parent := RoleBothPanel;
-  RoleBoth.Caption := 'BOTH  —  Server and Client';
+  RoleBoth.Caption := '1   BOTH  —  Server and Client';
   RoleBoth.Font.Name := 'Segoe UI';
   RoleBoth.Font.Size := 12;
   RoleBoth.Font.Style := [fsBold];
@@ -579,7 +618,7 @@ begin
 
   RoleServer := TRadioButton.Create(RolePage);
   RoleServer.Parent := RoleServerPanel;
-  RoleServer.Caption := 'SERVER  —  data and API';
+  RoleServer.Caption := '2   SERVER  —  data and API';
   RoleServer.Font.Name := 'Segoe UI';
   RoleServer.Font.Size := 12;
   RoleServer.Font.Style := [fsBold];
@@ -615,7 +654,7 @@ begin
 
   RoleClient := TRadioButton.Create(RolePage);
   RoleClient.Parent := RoleClientPanel;
-  RoleClient.Caption := 'CLIENT  —  the screen you work in';
+  RoleClient.Caption := '3   CLIENT  —  the screen you work in';
   RoleClient.Font.Name := 'Segoe UI';
   RoleClient.Font.Size := 12;
   RoleClient.Font.Style := [fsBold];
@@ -642,19 +681,37 @@ begin
   RoleHintClient.OnClick := @SelectClient;
   RoleHintClient.OnDblClick := @AdvanceClient;
 
+  RoleSummary := TNewStaticText.Create(RolePage);
+  RoleSummary.Parent := RolePage.Surface;
+  RoleSummary.Caption := 'You selected:  BOTH — Server and Client on this PC';
+  RoleSummary.Font.Name := 'Segoe UI';
+  RoleSummary.Font.Size := 10;
+  RoleSummary.Font.Style := [fsBold];
+  RoleSummary.Font.Color := clNavy;
+  RoleSummary.AutoSize := False;
+  RoleSummary.WordWrap := True;
+  RoleSummary.Left := 0;
+  RoleSummary.Top := RoleClientPanel.Top + RoleClientPanel.Height + ScaleY(8);
+  RoleSummary.Width := RolePage.SurfaceWidth;
+  RoleSummary.Height := ScaleY(20);
+
   RoleFoot := TNewStaticText.Create(RolePage);
   RoleFoot.Parent := RolePage.Surface;
   RoleFoot.Caption :=
-    'Unsure? Pick BOTH. Extra workstations later: run CoalesceClientSetup on those PCs.';
+    'Unsure? Pick BOTH (or press 1). Extra workstations later: run CoalesceClientSetup on those PCs.';
   RoleFoot.Font.Name := 'Segoe UI';
   RoleFoot.Font.Size := 8;
   RoleFoot.Font.Color := clGray;
   RoleFoot.AutoSize := False;
   RoleFoot.WordWrap := True;
   RoleFoot.Left := 0;
-  RoleFoot.Top := RoleClientPanel.Top + RoleClientPanel.Height + ScaleY(10);
+  RoleFoot.Top := RoleSummary.Top + RoleSummary.Height + ScaleY(4);
   RoleFoot.Width := RolePage.SurfaceWidth;
   RoleFoot.Height := ScaleY(28);
+
+  PrevWizardKeyDown := WizardForm.OnKeyDown;
+  WizardForm.OnKeyDown := @WizardKeyDown;
+  WizardForm.KeyPreview := True;
 end;
 #endif
 
