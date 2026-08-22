@@ -683,7 +683,7 @@ begin
 
   RoleSummary := TNewStaticText.Create(RolePage);
   RoleSummary.Parent := RolePage.Surface;
-  RoleSummary.Caption := 'You selected:  BOTH — Server and Client on this PC';
+  RoleSummary.Caption := 'You selected:  BOTH — Server + Client on this PC';
   RoleSummary.Font.Name := 'Segoe UI';
   RoleSummary.Font.Size := 10;
   RoleSummary.Font.Style := [fsBold];
