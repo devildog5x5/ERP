@@ -197,7 +197,6 @@ var
   RoleHintClient: TNewStaticText;
   RoleHintServer: TNewStaticText;
   RoleBadge: TNewStaticText;
-  PrevWizardKeyDown: TKeyEvent;
   DbSizePage: TWizardPage;
   DbSizeHeadline: TNewStaticText;
   DbSizeSubhead: TNewStaticText;
@@ -441,28 +440,24 @@ end;
 { Keys 1 / 2 / 3 pick a card while the chooser page is showing. }
 procedure WizardKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
-  if Assigned(PrevWizardKeyDown) then
-    PrevWizardKeyDown(Sender, Key, Shift);
-
   if (RolePage = nil) or (WizardForm.CurPageID <> RolePage.ID) then
     exit;
 
-  case Key of
-    Ord('1'), 97: { main '1' or numpad 1 }
-      begin
-        SelectBoth(nil);
-        Key := 0;
-      end;
-    Ord('2'), 98:
-      begin
-        SelectServer(nil);
-        Key := 0;
-      end;
-    Ord('3'), 99:
-      begin
-        SelectClient(nil);
-        Key := 0;
-      end;
+  { 49/50/51 = main row; 97/98/99 = numpad }
+  if (Key = 49) or (Key = 97) then
+  begin
+    SelectBoth(nil);
+    Key := 0;
+  end
+  else if (Key = 50) or (Key = 98) then
+  begin
+    SelectServer(nil);
+    Key := 0;
+  end
+  else if (Key = 51) or (Key = 99) then
+  begin
+    SelectClient(nil);
+    Key := 0;
   end;
 end;
 
@@ -709,7 +704,6 @@ begin
   RoleFoot.Width := RolePage.SurfaceWidth;
   RoleFoot.Height := ScaleY(28);
 
-  PrevWizardKeyDown := WizardForm.OnKeyDown;
   WizardForm.OnKeyDown := @WizardKeyDown;
   WizardForm.KeyPreview := True;
 end;

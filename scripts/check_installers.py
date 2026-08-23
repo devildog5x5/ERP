@@ -61,7 +61,7 @@ def main() -> int:
         ("CLIENT ONLY  —  desktop UI" in iss or "CLIENT  —  the screen you work in" in iss, "client option label"),
         ("RoleBadge" in iss and "Recommended" in iss, "recommended badge on Both"),
         ("RoleSummary" in iss and "You selected:" in iss, "live choice summary"),
-        ("WizardKeyDown" in iss and "Ord('1')" in iss, "1/2/3 keyboard shortcuts"),
+        ("WizardKeyDown" in iss and "Key = 49" in iss and "Key = 97" in iss, "1/2/3 keyboard shortcuts"),
         ("SelectBoth" in iss and "RoleHintBoth.OnClick" in iss, "hint clicks select both"),
         ("AdvanceBoth" in iss and "OnDblClick" in iss, "double-click advances from card"),
         ("PaintRolePanels" in iss, "selected card visual feedback"),
