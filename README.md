@@ -14,11 +14,11 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined (chooser)** | One wizard — pick **Both**, **Server**, or **Client** | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.16/CoalesceSetup.exe) |
-| **Client only** | Desktop UI only (talks to a running Coalesce Server) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.16/CoalesceClientSetup.exe) |
-| **Server only** | API / database host only | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.16/CoalesceServerSetup.exe) |
+| **Combined (chooser)** | One wizard — pick **Both**, **Server**, or **Client** | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.17/CoalesceSetup.exe) |
+| **Client only** | Desktop UI only (talks to a running Coalesce Server) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.17/CoalesceClientSetup.exe) |
+| **Server only** | API / database host only | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.17/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.16](https://github.com/devildog5x5/ERP/releases/tag/v1.6.16)
+- Latest release: [v1.6.17](https://github.com/devildog5x5/ERP/releases/tag/v1.6.17)
 - **CoalesceSetup.exe** opens with three numbered option cards (**1 Both** / **2 Server only** / **3 Client only**; Recommended on Both). Click, press 1–3, or double-click to continue. Silent: `/TYPE=full|server|client`.
 - **Client** and **Server** packages install that role only — no chooser, smaller payload. They use separate AppIds so both can live on one machine; Combined replaces them if you switch later.
 - Server installs also ask for a **planned database size** (Small 500 MB / Medium 2 GB / Large 10 GB / Custom). That choice is saved quietly into the server config and drives Database status warnings — not a hard engine limit. Need more room later? Use **Settings → Grow database…**.
