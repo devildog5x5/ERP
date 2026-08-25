@@ -1,0 +1,17 @@
+Coalesce
+========
+
+Where ERP and CRM come together.
+
+Next you will choose what this PC gets:
+
+  1  BOTH         — Server + Client  (one-PC shop; recommended)
+  2  SERVER ONLY  — data + API host  (other PCs run Client)
+  3  CLIENT ONLY  — desktop UI       (needs a Server somewhere)
+
+Click a card, press 1 / 2 / 3, or double-click to continue.
+
+After Server is running: sign in with admin / admin
+API default: http://127.0.0.1:8000
+
+Needs 64-bit Windows 7 SP1+ and .NET Framework 4.8.
