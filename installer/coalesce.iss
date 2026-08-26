@@ -197,6 +197,8 @@ var
   RoleHintClient: TNewStaticText;
   RoleHintServer: TNewStaticText;
   RoleBadge: TNewStaticText;
+  RoleBadgeServer: TNewStaticText;
+  RoleBadgeClient: TNewStaticText;
   DbSizePage: TWizardPage;
   DbSizeHeadline: TNewStaticText;
   DbSizeSubhead: TNewStaticText;
@@ -380,6 +382,19 @@ begin
   RoleSummary.Caption := 'You selected:  ' + ChoiceSummary();
 end;
 
+procedure UpdateNextButtonForRole();
+begin
+  { Make the Next button spell out the choice — harder to miss than a radio alone. }
+  if (RolePage = nil) or (WizardForm.CurPageID <> RolePage.ID) then
+    exit;
+  if RoleServer.Checked then
+    WizardForm.NextButton.Caption := 'Install Server'
+  else if RoleClient.Checked then
+    WizardForm.NextButton.Caption := 'Install Client'
+  else
+    WizardForm.NextButton.Caption := 'Install Both';
+end;
+
 procedure PaintRolePanels();
 begin
   { Selected card sinks and picks up a light highlight so the choice is obvious. }
@@ -417,6 +432,7 @@ begin
   end;
 
   UpdateRoleSummary();
+  UpdateNextButtonForRole();
 end;
 
 procedure SelectBoth(Sender: TObject);
@@ -541,10 +557,11 @@ begin
   RoleIntro := TNewStaticText.Create(RolePage);
   RoleIntro.Parent := RolePage.Surface;
   RoleIntro.Caption :=
-    'SERVER holds the database and API.  CLIENT is the desktop you work in.  ' +
-    'Pick exactly one option for THIS PC:';
+    'SERVER = database + API host.   CLIENT = desktop you work in.   ' +
+    'Choose exactly one for THIS PC:';
   RoleIntro.Font.Name := 'Segoe UI';
   RoleIntro.Font.Size := 10;
+  RoleIntro.Font.Style := [fsBold];
   RoleIntro.AutoSize := False;
   RoleIntro.WordWrap := True;
   RoleIntro.Left := 0;
@@ -619,10 +636,24 @@ begin
   RoleServer.Font.Style := [fsBold];
   RoleServer.Left := ScaleX(8);
   RoleServer.Top := ScaleY(6);
-  RoleServer.Width := RoleServerPanel.Width - ScaleX(16);
+  RoleServer.Width := RoleServerPanel.Width - ScaleX(100);
   RoleServer.Height := ScaleY(22);
   RoleServer.OnClick := @SelectServer;
   RoleServer.OnDblClick := @AdvanceServer;
+
+  RoleBadgeServer := TNewStaticText.Create(RolePage);
+  RoleBadgeServer.Parent := RoleServerPanel;
+  RoleBadgeServer.Caption := 'Host PC';
+  RoleBadgeServer.Font.Name := 'Segoe UI';
+  RoleBadgeServer.Font.Size := 9;
+  RoleBadgeServer.Font.Style := [fsBold];
+  RoleBadgeServer.Font.Color := clMaroon;
+  RoleBadgeServer.AutoSize := True;
+  RoleBadgeServer.Left := RoleServerPanel.Width - ScaleX(70);
+  RoleBadgeServer.Top := ScaleY(8);
+  RoleBadgeServer.Cursor := crHand;
+  RoleBadgeServer.OnClick := @SelectServer;
+  RoleBadgeServer.OnDblClick := @AdvanceServer;
 
   RoleHintServer := TNewStaticText.Create(RolePage);
   RoleHintServer.Parent := RoleServerPanel;
@@ -655,10 +686,24 @@ begin
   RoleClient.Font.Style := [fsBold];
   RoleClient.Left := ScaleX(8);
   RoleClient.Top := ScaleY(6);
-  RoleClient.Width := RoleClientPanel.Width - ScaleX(16);
+  RoleClient.Width := RoleClientPanel.Width - ScaleX(110);
   RoleClient.Height := ScaleY(22);
   RoleClient.OnClick := @SelectClient;
   RoleClient.OnDblClick := @AdvanceClient;
+
+  RoleBadgeClient := TNewStaticText.Create(RolePage);
+  RoleBadgeClient.Parent := RoleClientPanel;
+  RoleBadgeClient.Caption := 'Workstation';
+  RoleBadgeClient.Font.Name := 'Segoe UI';
+  RoleBadgeClient.Font.Size := 9;
+  RoleBadgeClient.Font.Style := [fsBold];
+  RoleBadgeClient.Font.Color := clTeal;
+  RoleBadgeClient.AutoSize := True;
+  RoleBadgeClient.Left := RoleClientPanel.Width - ScaleX(90);
+  RoleBadgeClient.Top := ScaleY(8);
+  RoleBadgeClient.Cursor := crHand;
+  RoleBadgeClient.OnClick := @SelectClient;
+  RoleBadgeClient.OnDblClick := @AdvanceClient;
 
   RoleHintClient := TNewStaticText.Create(RolePage);
   RoleHintClient.Parent := RoleClientPanel;
@@ -680,7 +725,7 @@ begin
   RoleSummary.Parent := RolePage.Surface;
   RoleSummary.Caption := 'You selected:  BOTH — Server + Client on this PC';
   RoleSummary.Font.Name := 'Segoe UI';
-  RoleSummary.Font.Size := 10;
+  RoleSummary.Font.Size := 11;
   RoleSummary.Font.Style := [fsBold];
   RoleSummary.Font.Color := clNavy;
   RoleSummary.AutoSize := False;
@@ -688,24 +733,25 @@ begin
   RoleSummary.Left := 0;
   RoleSummary.Top := RoleClientPanel.Top + RoleClientPanel.Height + ScaleY(8);
   RoleSummary.Width := RolePage.SurfaceWidth;
-  RoleSummary.Height := ScaleY(20);
+  RoleSummary.Height := ScaleY(22);
 
   RoleFoot := TNewStaticText.Create(RolePage);
   RoleFoot.Parent := RolePage.Surface;
   RoleFoot.Caption :=
-    'Not sure? Take BOTH (press 1). More desks later: install CoalesceClientSetup on those PCs.';
+    'Not sure? Take BOTH (press 1). Extra desks later: run CoalesceClientSetup on those PCs.';
   RoleFoot.Font.Name := 'Segoe UI';
   RoleFoot.Font.Size := 8;
   RoleFoot.Font.Color := clGray;
   RoleFoot.AutoSize := False;
   RoleFoot.WordWrap := True;
   RoleFoot.Left := 0;
-  RoleFoot.Top := RoleSummary.Top + RoleSummary.Height + ScaleY(4);
+  RoleFoot.Top := RoleSummary.Top + RoleSummary.Height + ScaleY(2);
   RoleFoot.Width := RolePage.SurfaceWidth;
   RoleFoot.Height := ScaleY(28);
 
   WizardForm.OnKeyDown := @WizardKeyDown;
   WizardForm.KeyPreview := True;
+  UpdateNextButtonForRole();
 end;
 #endif
 
@@ -984,6 +1030,16 @@ begin
   if (DbSizePage <> nil) and (PageID = DbSizePage.ID) then
     Result := not ServerComponentSelected();
 end;
+
+#if IsChooser == "1"
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (RolePage <> nil) and (CurPageID = RolePage.ID) then
+    UpdateNextButtonForRole()
+  else
+    WizardForm.NextButton.Caption := SetupMessage(msgButtonNext);
+end;
+#endif
 
 function NextButtonClick(CurPageID: Integer): Boolean;
 var
