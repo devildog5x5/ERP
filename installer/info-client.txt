@@ -1,0 +1,16 @@
+Coalesce Client
+===============
+
+Puts the Coalesce desktop UI on this computer.
+
+You get
+  - Coalesce.Client.exe
+  - Settings under %LOCALAPPDATA%\Coalesce\Client
+
+The Client does not keep inventory or orders by itself. Coalesce Server
+must already be installed and running before you can sign in.
+
+If Server lives on another machine, open Client Settings and set the API
+URL (example: http://192.168.1.10:8000).
+
+Needs 64-bit Windows 7 SP1 or later and .NET Framework 4.8.
