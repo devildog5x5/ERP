@@ -1,0 +1,5 @@
+<Project>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48' or '$(TargetFramework)' == 'net48-windows'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
+  </ItemGroup>
+</Project>
