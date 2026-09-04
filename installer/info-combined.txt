@@ -1,0 +1,27 @@
+Coalesce
+========
+
+Where ERP and CRM come together.
+
+This is the Combined installer. The next screen is the whole point of this
+package — pick what THIS computer will be:
+
+  1  BOTH         — Server + Client on this PC
+     One-PC shops (Recommended)
+
+  2  SERVER ONLY  — data and API host
+     Other desks connect here
+
+  3  CLIENT ONLY  — desktop UI
+     Talks to a Server that already exists
+
+Click a card, press 1 / 2 / 3, or double-click to continue.
+The Next button renames itself: Install Both → / Install Server → / Install Client →.
+
+Already know you only need one role? Grab the smaller dedicated packages instead:
+  CoalesceServerSetup.exe  or  CoalesceClientSetup.exe
+
+After Server is up: sign in with admin / admin
+API default: http://127.0.0.1:8000
+
+Needs 64-bit Windows 7 SP1+ and .NET Framework 4.8.
