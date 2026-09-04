@@ -85,6 +85,8 @@ def main() -> int:
         ("Role-aware cleanup" in iss, "role-aware uninstall comments"),
         ("clInfoBk" in iss, "selected card highlight"),
         ("DisableWelcomePage=yes" in iss, "welcome page skipped"),
+        ("WizardForm.ActiveControl" in iss and "RoleBoth" in iss, "chooser focuses selected card"),
+        ("FinishedLabel.Caption" in iss and "Installed:" in iss, "finished page restates choice"),
     ]
 
     failed = False

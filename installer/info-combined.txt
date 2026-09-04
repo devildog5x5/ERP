@@ -3,21 +3,22 @@ Coalesce
 
 Where ERP and CRM come together.
 
-Next screen asks what THIS computer will be:
+This is the Combined installer. The next screen is the whole point of this
+package — pick what THIS computer will be:
 
-  1  BOTH         — Server + Client
+  1  BOTH         — Server + Client on this PC
      One-PC shops (Recommended)
 
-  2  SERVER ONLY  — data and API
-     The host other desks connect to
+  2  SERVER ONLY  — data and API host
+     Other desks connect here
 
   3  CLIENT ONLY  — desktop UI
-     A workstation talking to an existing Server
+     Talks to a Server that already exists
 
 Click a card, press 1 / 2 / 3, or double-click to continue.
-Next becomes Install Both →, Install Server →, or Install Client →.
+The Next button renames itself: Install Both → / Install Server → / Install Client →.
 
-Prefer a smaller single-role download?
+Already know you only need one role? Grab the smaller dedicated packages instead:
   CoalesceServerSetup.exe  or  CoalesceClientSetup.exe
 
 After Server is up: sign in with admin / admin

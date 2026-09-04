@@ -1035,7 +1035,25 @@ end;
 procedure CurPageChanged(CurPageID: Integer);
 begin
   if (RolePage <> nil) and (CurPageID = RolePage.ID) then
-    UpdateNextButtonForRole()
+  begin
+    UpdateNextButtonForRole();
+    { Land keyboard focus on the selected card so Enter / arrows feel obvious. }
+    if RoleServer.Checked then
+      WizardForm.ActiveControl := RoleServer
+    else if RoleClient.Checked then
+      WizardForm.ActiveControl := RoleClient
+    else
+      WizardForm.ActiveControl := RoleBoth;
+  end
+  else if CurPageID = wpFinished then
+  begin
+    WizardForm.NextButton.Caption := SetupMessage(msgButtonFinish);
+    WizardForm.FinishedLabel.Caption :=
+      'Done. Installed: ' + ChoiceSummary() + #13#10#13#10 +
+      'Default login: admin / admin' + #13#10 +
+      'API: http://127.0.0.1:8000' + #13#10#13#10 +
+      'Tip: start Server before Client when both are on this PC.';
+  end
   else
     WizardForm.NextButton.Caption := SetupMessage(msgButtonNext);
 end;
