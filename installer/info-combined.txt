@@ -1,0 +1,16 @@
+Coalesce
+========
+
+Where ERP and CRM come together.
+
+(This briefing is kept for docs / older builds. Combined Setup v1.6.28+
+opens straight on the role cards — Both / Server / Client.)
+
+  1  BOTH         — Server + Client on this PC  (Recommended)
+  2  SERVER ONLY  — data and API host
+  3  CLIENT ONLY  — desktop UI for a running Server
+
+Default login after Server is up: admin / admin
+API default: http://127.0.0.1:8000
+
+Needs 64-bit Windows 7 SP1+ and .NET Framework 4.8.
