@@ -14,11 +14,11 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined (chooser)** | Opens on three cards — pick **Both**, **Server**, or **Client** | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.30/CoalesceSetup.exe) |
-| **Client only** | Desktop UI only (talks to a running Coalesce Server) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.30/CoalesceClientSetup.exe) |
-| **Server only** | API / database host only | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.30/CoalesceServerSetup.exe) |
+| **Combined (chooser)** | Opens on three cards — pick **Both**, **Server**, or **Client** | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.31/CoalesceSetup.exe) |
+| **Client only** | Desktop UI only (talks to a running Coalesce Server) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.31/CoalesceClientSetup.exe) |
+| **Server only** | API / database host only | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.31/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.30](https://github.com/devildog5x5/ERP/releases/tag/v1.6.30)
+- Latest release: [v1.6.31](https://github.com/devildog5x5/ERP/releases/tag/v1.6.31)
 - **CoalesceSetup.exe** opens on **What should this PC run?** — three cards (**1 Both** / **2 Server only** / **3 Client only**; badges: Recommended / Host PC / Workstation). Active card shows SELECTED. Next says Install Both → / Install Server → / Install Client →. Click, press 1–3, ↑ ↓, Enter, or double-click. Silent: `/TYPE=full|server|client`.
 - **Client** and **Server** packages install that role only — short briefing, no chooser, smaller payload. Separate AppIds so both can live on one machine; Combined replaces them if you switch later.
 - Server installs also ask for a **planned database size** (Small 500 MB / Medium 2 GB / Large 10 GB / Custom). That choice is saved quietly into the server config and drives Database status warnings — not a hard engine limit. Need more room later? Use **Settings → Grow database…**.
