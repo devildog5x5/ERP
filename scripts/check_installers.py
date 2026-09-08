@@ -57,7 +57,7 @@ def main() -> int:
         ("CreateCustomPage(wpWelcome" in iss, "chooser is first page (after skipped welcome)"),
         ("What should this PC run?" in iss, "chooser page title asks what to run"),
         ("MakeRolePanel" in iss and "RoleBothPanel" in iss, "clickable option cards"),
-        ("BOTH  —  Server + Client" in iss or "BOTH  —  Server and Client" in iss, "both option label"),
+        ("BOTH  —  Server and Client" in iss or "BOTH  —  Server + Client" in iss, "both option label"),
         ("SERVER ONLY  —  data and API" in iss or "SERVER  —  data and API" in iss, "server option label"),
         ("CLIENT ONLY  —  desktop UI" in iss or "CLIENT  —  the screen you work in" in iss, "client option label"),
         ("RoleBadge" in iss and "Recommended" in iss, "recommended badge on Both"),

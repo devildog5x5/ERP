@@ -47,7 +47,7 @@
 #else
   #define MyAppName "Coalesce"
   #define OutputName "CoalesceSetup"
-  #define VersionDesc "Coalesce installer (Client / Server / Both)"
+  #define VersionDesc "Coalesce installer — choose Both, Server, or Client"
   #define InfoBefore "info-combined.txt"
   #define UninstallIcon "{app}\Client\Coalesce.Client.exe"
   #define AppIdGuid "{{D0F6B2E5-7A81-4C24-AF5D-B3C2E4F60719}"
@@ -604,13 +604,13 @@ begin
   { First real page of Combined Setup (Welcome + InfoBefore are off). }
   RolePage := CreateCustomPage(wpWelcome,
     'What should this PC run?',
-    'Pick one card. The Next button becomes Install Both → / Install Server → / Install Client →.');
+    'Three clear choices. Pick one card — Next becomes Install Both → / Install Server → / Install Client →.');
 
   RoleIntro := TNewStaticText.Create(RolePage);
   RoleIntro.Parent := RolePage.Surface;
   RoleIntro.Caption :=
-    'Server = database + API.  Client = the desktop you work in.'#13#10 +
-    'Click a card (or press 1 / 2 / 3). Enter or double-click continues.';
+    'Server hosts the database + API.  Client is the desktop you work in.'#13#10 +
+    'Click a card, press 1 / 2 / 3, or use ↑ ↓. Enter or double-click continues.';
   RoleIntro.Font.Name := 'Segoe UI';
   RoleIntro.Font.Size := 10;
   RoleIntro.Font.Style := [fsBold];
@@ -631,7 +631,7 @@ begin
 
   RoleBoth := TRadioButton.Create(RolePage);
   RoleBoth.Parent := RoleBothPanel;
-  RoleBoth.Caption := '1   BOTH  —  Server + Client';
+  RoleBoth.Caption := '1   BOTH  —  Server and Client';
   RoleBoth.Font.Name := 'Segoe UI';
   RoleBoth.Font.Size := 12;
   RoleBoth.Font.Style := [fsBold];
@@ -674,7 +674,7 @@ begin
   RoleHintBoth := TNewStaticText.Create(RolePage);
   RoleHintBoth.Parent := RoleBothPanel;
   RoleHintBoth.Caption :=
-    'One PC does everything: API/database host and the desktop UI on the same machine.';
+    'Single-PC shop: this machine runs the API/database and the desktop UI.';
   RoleHintBoth.Font.Name := 'Segoe UI';
   RoleHintBoth.Font.Size := 9;
   RoleHintBoth.Left := ScaleX(28);
@@ -738,7 +738,7 @@ begin
   RoleHintServer := TNewStaticText.Create(RolePage);
   RoleHintServer.Parent := RoleServerPanel;
   RoleHintServer.Caption :=
-    'This PC hosts the shared DB + API for other desks (default login admin / admin).';
+    'This PC keeps the shared DB + API. Other desks install Client and connect here.';
   RoleHintServer.Font.Name := 'Segoe UI';
   RoleHintServer.Font.Size := 9;
   RoleHintServer.Left := ScaleX(28);
@@ -802,7 +802,7 @@ begin
   RoleHintClient := TNewStaticText.Create(RolePage);
   RoleHintClient.Parent := RoleClientPanel;
   RoleHintClient.Caption :=
-    'Server already runs elsewhere — this machine is just a desk that connects to it.';
+    'Server already runs on another PC — this machine is only a desk that signs in.';
   RoleHintClient.Font.Name := 'Segoe UI';
   RoleHintClient.Font.Size := 9;
   RoleHintClient.Left := ScaleX(28);
@@ -832,7 +832,7 @@ begin
   RoleFoot := TNewStaticText.Create(RolePage);
   RoleFoot.Parent := RolePage.Surface;
   RoleFoot.Caption :=
-    'Not sure? Keep Both (1). Want a smaller download? Use CoalesceServerSetup.exe or CoalesceClientSetup.exe instead.';
+    'Unsure? Leave Both selected. Prefer a smaller download? Grab CoalesceServerSetup.exe or CoalesceClientSetup.exe.';
   RoleFoot.Font.Name := 'Segoe UI';
   RoleFoot.Font.Size := 8;
   RoleFoot.Font.Color := clGray;
