@@ -3,7 +3,7 @@ Coalesce
 
 Where ERP and CRM come together.
 
-Combined Setup opens on: What should this PC run?
+Opens on three obvious cards — pick exactly one:
 
   1  BOTH         — Server and Client on this PC  (Recommended)
   2  SERVER ONLY  — data and API host
@@ -11,7 +11,9 @@ Combined Setup opens on: What should this PC run?
 
 Click a card, press 1 / 2 / 3, use the arrow keys, Enter / Space, or double-click.
 Next becomes Install Both → / Install Server → / Install Client →.
-SELECTED marks the active card. The bar under the cards restates your choice.
+SELECTED marks the active card; the bar under the cards restates your choice.
+
+Already know you only need one role? Use CoalesceServerSetup.exe or CoalesceClientSetup.exe instead.
 
 Default login after Server is up: admin / admin
 API default: http://127.0.0.1:8000

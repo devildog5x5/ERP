@@ -611,13 +611,13 @@ begin
   { First real page of Combined Setup (Welcome + InfoBefore are off). }
   RolePage := CreateCustomPage(wpWelcome,
     'What should this PC run?',
-    'Choose exactly one card below. The Install button names your choice.');
+    'Pick one card. Next turns into Install Both / Server / Client.');
 
   RoleIntro := TNewStaticText.Create(RolePage);
   RoleIntro.Parent := RolePage.Surface;
   RoleIntro.Caption :=
-    'CHOOSE ONE — Server holds the database + API. Client is the desktop you work in.'#13#10 +
-    'Click a card (or press 1 / 2 / 3). Enter, Space, or double-click continues.';
+    'CHOOSE ONE — 1 Both (this PC does everything)  ·  2 Server (host the data)  ·  3 Client (desk UI only)'#13#10 +
+    'Click a card, press 1/2/3, or use the arrows. Enter / Space / double-click continues.';
   RoleIntro.Font.Name := 'Segoe UI';
   RoleIntro.Font.Size := 10;
   RoleIntro.Font.Style := [fsBold];
@@ -850,7 +850,7 @@ begin
   RoleFoot := TNewStaticText.Create(RolePage);
   RoleFoot.Parent := RolePage.Surface;
   RoleFoot.Caption :=
-    'Unsure? Leave Both selected. Want a smaller download? Use CoalesceServerSetup.exe or CoalesceClientSetup.exe instead.';
+    'Unsure? Keep Both. Already know the role? Prefer CoalesceServerSetup.exe or CoalesceClientSetup.exe (no chooser, smaller download).';
   RoleFoot.Font.Name := 'Segoe UI';
   RoleFoot.Font.Size := 8;
   RoleFoot.Font.Color := clGray;
