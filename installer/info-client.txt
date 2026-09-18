@@ -1,0 +1,19 @@
+Coalesce Client
+===============
+
+THIS PACKAGE = CLIENT ONLY (desktop UI).
+
+You get
+  - Coalesce.Client.exe
+  - Settings under %LOCALAPPDATA%\Coalesce\Client
+
+No Server is installed. Coalesce Server must already be running
+somewhere before you can sign in.
+
+If Server is on another machine, open Client Settings and set the API
+URL (example: http://192.168.1.10:8000).
+
+Want Server too, or unsure? Use CoalesceSetup.exe instead — it opens on
+three cards (Both / Server / Client) so you can pick.
+
+Needs 64-bit Windows 7 SP1 or later and .NET Framework 4.8.
