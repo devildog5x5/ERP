@@ -14,11 +14,11 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined (chooser)** | Opens on three cards — pick **Both**, **Server**, or **Client** | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.42/CoalesceSetup.exe) |
-| **Client only** | Desktop UI only (talks to a running Coalesce Server) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.42/CoalesceClientSetup.exe) |
-| **Server only** | API / database host only | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.42/CoalesceServerSetup.exe) |
+| **Combined (chooser)** | Opens on three cards — pick **Both**, **Server**, or **Client** | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.43/CoalesceSetup.exe) |
+| **Client only** | Desktop UI only (talks to a running Coalesce Server) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.43/CoalesceClientSetup.exe) |
+| **Server only** | API / database host only | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.43/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.42](https://github.com/devildog5x5/ERP/releases/tag/v1.6.42)
+- Latest release: [v1.6.43](https://github.com/devildog5x5/ERP/releases/tag/v1.6.43)
 - **CoalesceSetup.exe** opens on **What should this PC run?** with a one-line quick guide (**one PC → Both · shared host → Server · extra desk → Client**), then three cards with large **1 / 2 / 3** numbers (**Both** = Server + Client / **Server only** = holds the data / **Client only** = the desk you work at; badges: Recommended / Host PC / Workstation). Each card has a **Pick if …** line. Active card shows ✓ SELECTED; the others say “Click to choose”; the summary bar restates the choice and says Next installs that; Next becomes **Yes — Install Both →** / **Yes — Install Server →** / **Yes — Install Client →**. Click, press 1–3, arrow keys, Enter / Space, or double-click. Silent: `/TYPE=full|server|client`.
 - **Client** and **Server** packages install that role only — short briefing, no chooser, smaller payload. Separate AppIds so both can live on one machine; Combined replaces them if you switch later.
 - Server installs also ask for a **planned database size** (Small 500 MB / Medium 2 GB / Large 10 GB / Custom). That choice is saved quietly into the server config and drives Database status warnings — not a hard engine limit. Need more room later? Use **Settings → Grow database…**.
