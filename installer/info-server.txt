@@ -1,0 +1,20 @@
+Coalesce Server
+===============
+
+THIS PACKAGE = SERVER ONLY (API and database host).
+
+You get
+  - Coalesce.Server.exe (http://127.0.0.1:8000)
+  - SQLite database under %LOCALAPPDATA%\Coalesce\Server
+  - First login: admin / admin
+
+Usual path
+  1. Install Server where the business data should live.
+  2. Start Coalesce Server and leave it running.
+  3. Install Coalesce Client here and/or on other PCs
+     (CoalesceClientSetup.exe, or Combined and pick Client).
+
+Want Client on this same PC, or unsure? Use CoalesceSetup.exe instead —
+it opens on three cards (Both / Server / Client) so you can pick.
+
+Needs 64-bit Windows 7 SP1 or later and .NET Framework 4.8.
