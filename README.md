@@ -14,17 +14,19 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceSetup.exe) |
-| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceClientSetup.exe) |
-| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceServerSetup.exe) |
+| **Combined (chooser)** | Opens on three cards — pick **Both**, **Server**, or **Client** | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.48/CoalesceSetup.exe) |
+| **Client only** | Desktop UI only (talks to a running Coalesce Server) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.48/CoalesceClientSetup.exe) |
+| **Server only** | API / database host only | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.48/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.15](https://github.com/devildog5x5/ERP/releases/tag/v1.6.15)
-- Every installer asks up front — loudly — whether to install **Client**, **Server**, or **Both**.
+- Latest release: [v1.6.48](https://github.com/devildog5x5/ERP/releases/tag/v1.6.48)
+- **CoalesceSetup.exe** opens on **What should this PC run?** with a one-line quick guide (**one PC → Both · shared host → Server · extra desk → Client**). Not sure? Leave **Both** selected. Three cards with large **1 / 2 / 3** (**Both — this is my only PC** / **Server only — holds the data** / **Client only — the desk you work at**; badges: Recommended / Host PC / Workstation). Each card states **Includes** / **Skips** plus a **Pick if …** line. Active card shows ✓ SELECTED; the others say “Click to choose”; the color-tinted summary bar (yellow / rose / mint) restates Includes/Skips and a plain-English **After install this PC will …** outcome; Next becomes **Yes — Install Both →** / **Yes — Install Server →** / **Yes — Install Client →**. Click, press 1–3, arrow keys, Enter / Space, or double-click. Silent: `/TYPE=full|server|client`.
+- **Client** and **Server** packages install that role only — short briefing, no chooser, smaller payload. Separate AppIds so both can live on one machine; Combined replaces them if you switch later.
 - Server installs also ask for a **planned database size** (Small 500 MB / Medium 2 GB / Large 10 GB / Custom). That choice is saved quietly into the server config and drives Database status warnings — not a hard engine limit. Need more room later? Use **Settings → Grow database…**.
 - Default login after install: `admin` / `admin`
 - Server listens at `http://127.0.0.1:8000` by default
 - Requires **64-bit Windows** and **[.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48)**
 - Rebuild locally: `powershell -File .\build_installers.ps1` → `installers\CoalesceSetup.exe`, `CoalesceClientSetup.exe`, `CoalesceServerSetup.exe`
+- Source check (no Inno needed): `python scripts/check_installers.py`
 
 ## Requirements
 
