@@ -14,11 +14,11 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined** | Chooser: Both / Server / Client (cards, keyboard 1–3) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.51/CoalesceSetup.exe) |
-| **Client package** | Client only (desktop UI; no chooser) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.51/CoalesceClientSetup.exe) |
-| **Server package** | Server only (API / database host; no chooser) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.51/CoalesceServerSetup.exe) |
+| **Combined** | Chooser: Both / Server / Client (cards, keyboard 1–3) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.52/CoalesceSetup.exe) |
+| **Client package** | Client only (desktop UI; no chooser) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.52/CoalesceClientSetup.exe) |
+| **Server package** | Server only (API / database host; no chooser) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.52/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.51](https://github.com/devildog5x5/ERP/releases/tag/v1.6.51)
+- Latest release: [v1.6.52](https://github.com/devildog5x5/ERP/releases/tag/v1.6.52)
 - Combined opens on three obvious cards — **Both** (Recommended), then **Server** | **Client** side by side. Dedicated packages skip the chooser and ship only their payload.
 - Server installs also ask for a **planned database size** (Small 500 MB / Medium 2 GB / Large 10 GB / Custom). That choice is saved quietly into the server config and drives Database status warnings — not a hard engine limit. Need more room later? Use **Settings → Grow database…**.
 - Default login after install: `admin` / `admin`
