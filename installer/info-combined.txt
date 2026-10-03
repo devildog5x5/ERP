@@ -1,0 +1,36 @@
+Coalesce
+========
+
+Where ERP and CRM come together.
+
+This is the Combined Setup. The first screen is three numbered cards —
+pick exactly one. Only that role installs.
+
+  1  BOTH (full width, ★ Recommended) — Server + Client together
+  Then side by side:
+  2  SERVER ONLY (left)  — holds the data / API
+  3  CLIENT ONLY (right) — the desk you work at
+
+Quick guide:
+  one PC → Both (1)  ·  shared host → Server (2)  ·  extra desk → Client (3)
+
+Not sure? Leave Both selected and click Next.
+
+Each card shows Includes / Skips plus a “Pick if …” line.
+Active card: ✓ SELECTED, a color tint (yellow / rose / mint), and a
+left accent strip (navy / maroon / teal). Titles are bold labels so the
+cards read as big buttons. Others: “Click to choose”. The bar under the
+cards matches that tint, restates the choice in plain English (what this
+PC will be after install), and Next becomes Yes — Install Both/Server/Client →.
+Later pages keep “Installing: …” in the subtitle so the choice never
+disappears after you leave the cards.
+
+Click a card, press 1 / 2 / 3, use the arrow keys, Enter / Space, or double-click.
+
+Already know you only need one role? Prefer the smaller dedicated packages:
+  CoalesceServerSetup.exe  or  CoalesceClientSetup.exe
+
+Default login after Server is up: admin / admin
+API default: http://127.0.0.1:8000
+
+Needs 64-bit Windows 7 SP1+ and .NET Framework 4.8.

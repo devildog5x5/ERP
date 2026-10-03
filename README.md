@@ -14,12 +14,12 @@ Installers are published on the [GitHub Releases](https://github.com/devildog5x5
 
 | Package | What it installs | Download |
 |---------|------------------|----------|
-| **Combined** | Same chooser installer (default: Client + Server) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceSetup.exe) |
-| **Client package** | Same chooser installer (default: Client only) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceClientSetup.exe) |
-| **Server package** | Same chooser installer (default: Server only) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.15/CoalesceServerSetup.exe) |
+| **Combined** | Chooser: Both / Server / Client (cards, accent bar, keyboard 1–3) | [CoalesceSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.55/CoalesceSetup.exe) |
+| **Client package** | Client only (desktop UI; no chooser) | [CoalesceClientSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.55/CoalesceClientSetup.exe) |
+| **Server package** | Server only (API / database host; no chooser) | [CoalesceServerSetup.exe](https://github.com/devildog5x5/ERP/releases/download/v1.6.55/CoalesceServerSetup.exe) |
 
-- Latest release: [v1.6.15](https://github.com/devildog5x5/ERP/releases/tag/v1.6.15)
-- Every installer asks up front — loudly — whether to install **Client**, **Server**, or **Both**.
+- Latest release: [v1.6.55](https://github.com/devildog5x5/ERP/releases/tag/v1.6.55)
+- Combined opens on three obvious cards — **Both** (Recommended, full width), then **Server** | **Client** side by side. Selected card lights a left accent strip and tints yellow / rose / mint; later pages keep **Installing: …** in the subtitle. Dedicated packages skip the chooser and ship only their payload.
 - Server installs also ask for a **planned database size** (Small 500 MB / Medium 2 GB / Large 10 GB / Custom). That choice is saved quietly into the server config and drives Database status warnings — not a hard engine limit. Need more room later? Use **Settings → Grow database…**.
 - Default login after install: `admin` / `admin`
 - Server listens at `http://127.0.0.1:8000` by default
